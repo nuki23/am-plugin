@@ -23,6 +23,9 @@ documentas.
 4. **Análisis específico.** Aunque el patrón se repita, causa y pasos nombran los
    elementos reales de ese hallazgo.
 5. Solo escribes dentro de `reportes/` y `scripts/` del proyecto actual.
+6. **Sin secretos ni datos personales.** Nunca copies a un `.md`, a un PDF ni al chat el
+   valor de un secreto, credencial, token o dato personal (por ejemplo, el valor de una
+   Site Property o un correo); solo el nombre y la ruta del elemento.
 
 ## Qué hacer según el argumento
 
@@ -57,6 +60,55 @@ documentas.
 Si un `_progreso.md` existente no tiene la sección `Prefijos` o las columnas
 `Estado final` y `Actualizado`, agrégalas (vacías) sin perder ni reordenar datos.
 
+## Prefijos de patrón (referencia fija)
+
+| Prefijo | Patrón |
+|---|---|
+| AGR | Automatically generated publicly exposed REST endpoint |
+| AQC | Aggregate or SQL query inside a cycle |
+| ARS | Avoid setting Anonymous Roles to access Screens |
+| CDE | Consuming Deprecated Element |
+| CMF | Core module consumed by Foundation |
+| CRA | Cyclic references between applications |
+| CSS | CSS in the screen's style sheet |
+| DUP | Duplicated Code |
+| EAS | End-User application providing services |
+| EMS | End-User module providing services |
+| ERS | Exposed REST services are not secured |
+| ESP | Exposed Secrets in Site Properties |
+| FCS | Foundation or Core module with screens |
+| ICS | Inline CSS style |
+| IEL | Inefficient empty list test |
+| IGU | Insecure usage of GetUserId function on client context |
+| LIM | Large image |
+| LLV | Large Local Variable in ViewState |
+| LRE | Large resource |
+| LRT | Avoid long-running Timers |
+| LST | Long Server Requests Timeout |
+| LSV | Large Session Variable |
+| LUF | Long undocumented flow |
+| MDP | Missing descriptions on public element or parameter |
+| MSM | Monolithic Service Module |
+| MSR | Multiple server requests (Aggregates or actions) inside Client Actions |
+| MUI | Monolithic web UI module |
+| PER | Public Entities aren't read-only |
+| REM | Reminder Comments |
+| RRS | Avoid setting Registered Roles to access Screens |
+| SCA | Sequence of connected Aggregates |
+| SEA | Screen Aggregate exposing System entities on Anonymous screen |
+| SER | Screen Aggregate exposing System entities on Registered screen |
+| SPU | Site Property update |
+| SQI | Vulnerable SQL Injection |
+| SRC | Server requests in client events |
+| TDC | Too much disabled code |
+| TSC | Team strongly coupled with another team |
+| UAM | Unused Action in Module |
+| UAQ | Unused Aggregate or SQL Query |
+| ULO | Unreachable Logic |
+| UPT | Unidentified public action managing transaction |
+| URA | Unlimited records in Aggregate |
+| URS | Unlimited records in SQL query |
+
 ## Paso 0 — Preparar
 
 1. Lee el Excel (export "Code Quality Report" de AI Mentor, una hoja). Columnas esperadas:
@@ -75,15 +127,17 @@ Si un `_progreso.md` existente no tiene la sección `Prefijos` o las columnas
    Si los encabezados no coinciden con esta tabla, muestra los reales y pide confirmar
    el mapeo antes de seguir. No copies a los documentos los correos de
    `Created By Username` ni `Snoozed By Username`.
-2. El Excel no trae ID. Asigna uno corto y estable por patrón: prefijo de 3 letras +
-   consecutivo en el orden del Excel. Prefijos iniciales: `SRC` Server requests in
-   client events, `MSR` Multiple server requests inside Client Actions, `CSS` CSS in the
-   screen's style sheet, `SCA` Sequence of connected Aggregates, `URA` Unlimited records
-   in Aggregate, `LST` Long Server Requests Timeout. Los prefijos en uso se guardan en
-   la sección `Prefijos` de `_progreso.md`: antes de asignar, léela y reutiliza lo que
-   ya esté. Para un patrón nuevo, inventa un prefijo de 3 letras que no esté en uso y
-   agrégalo a esa sección. Ejemplo de ID: `SRC-003`. La carpeta se llama
-   `<ID>-<Object Name>`.
+2. El Excel no trae ID. Asigna uno corto y estable: prefijo de 3 letras + consecutivo
+   en el orden del Excel (ejemplo: `SRC-003`). La carpeta se llama `<ID>-<Object Name>`.
+   Para el prefijo de cada `Pattern Name`:
+   - Busca el patrón por nombre en la tabla "Prefijos de patrón" (arriba) y en la
+     sección `Prefijos` de `_progreso.md`, sin distinguir mayúsculas ni espacios extra
+     y tratando el apóstrofo tipográfico (’) y el recto (') como iguales.
+   - Si no está en ninguna de las dos, genera un prefijo de 3 letras mayúsculas que no
+     choque con ninguno de los existentes (tabla fija ni sección `Prefijos`) y regístralo
+     en la sección `Prefijos` de `_progreso.md`.
+   - Los ID ya asignados en un `_progreso.md` existente no cambian. Un hallazgo nuevo
+     continúa el consecutivo desde el mayor ya usado con su prefijo.
 3. Crea o actualiza `reportes/_progreso.md` con el formato de arriba. Estado inicial
    `pendiente`, `Estado final` vacío, `Actualizado` con la fecha de hoy. Si ya existe,
    respétalo: identifica cada fila por `Pattern Name` + `Object Path`, conserva los ID,

@@ -13,6 +13,9 @@ Lee `reportes/_progreso.md` y muestra, sin escribir ningún archivo:
   `Actualizado`), para saber qué falta corregir o cerrar.
 - El siguiente `pendiente` que tomaría `/am:review` (el primero de la tabla).
 
+Nunca muestres en el chat el valor de un secreto, credencial, token o dato personal;
+solo el nombre y la ruta del elemento.
+
 Si el archivo no tiene las columnas `Estado final` o `Actualizado`, trátalas como vacías
 y avisa que el próximo comando que cambie un estado las agregará; no edites el archivo.
 

@@ -13,6 +13,10 @@ hallazgo indicado. Fuera de este comando la regla sigue siendo solo lectura. Nun
 ejecutes por iniciativa propia ni encadenes varios hallazgos: una invocación, un
 hallazgo.
 
+Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
+dato personal; solo el nombre y la ruta del elemento. Esto incluye el plan de cambio e
+`implementacion.md`.
+
 Si `reportes/_progreso.md` no tiene las columnas `Estado final` y `Actualizado`,
 agrégalas (vacías) sin perder datos antes de seguir (formato en `/am:review`).
 

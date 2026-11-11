@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.2.0-2563eb)
+![versión](https://img.shields.io/badge/versión-0.2.1-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -67,7 +67,7 @@ Para traer una versión nueva:
 | Comando | Qué hace | Escribe en OutSystems |
 |---|---|:---:|
 | `/am:review [excel]` | Carga el Excel y documenta los hallazgos uno a uno. Sin argumento, continúa donde quedó. | No |
-| `/am:close <ID>` | Cierra un hallazgo como **Resuelto** (con evidencia) o **Won't fix** (con justificación). | No |
+| `/am:close <ID>` | Cierra un hallazgo como **Resuelto** (con evidencia) o **Won't fix** (con justificación escrita y quién aprobó la decisión). | No |
 | `/am:redo <ID> [nota]` | Rehace el análisis de un hallazgo cuando algo salió mal. | No |
 | `/am:status` | Muestra el avance por estado y por módulo. | No |
 | `/am:summary [desde]` | Genera el reporte resumen del periodo (últimos 7 días por defecto). | No |
@@ -79,13 +79,16 @@ Para traer una versión nueva:
 stateDiagram-v2
     direction LR
     [*] --> pendiente: Excel cargado
-    pendiente --> borrador: /am:review
-    borrador --> implementado: /am:fix (opcional)
-    borrador --> cerrado: /am:close
-    implementado --> cerrado: /am:close
-    borrador --> borrador: /am:redo
-    pendiente --> omitido: ya gestionado en AI Mentor
+    [*] --> omitido: Excel cargado, ya gestionado en AI Mentor
+    pendiente --> borrador: /am#58;review
+    borrador --> implementado: /am#58;fix (opcional)
+    borrador --> cerrado: /am#58;close
+    implementado --> cerrado: /am#58;close
+    borrador --> borrador: /am#58;redo
+    implementado --> borrador: /am#58;redo (cambia la solución)
+    cerrado --> borrador: /am#58;redo (cambia la solución)
     cerrado --> [*]
+    omitido --> [*]
 ```
 
 | Estado | Significa |
@@ -125,28 +128,72 @@ Siempre con estas seis secciones:
 5. Evidencia de corrección
 6. Estado final de la atención
 
-Mientras el hallazgo está en `borrador`, el PDF sale marcado como **BORRADOR** y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final.
+Mientras el hallazgo está en `borrador`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final.
 
 ### Identificadores
 
-El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patrón:
+El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patrón: prefijo de 3 letras + consecutivo (por ejemplo, `SRC-003`). El patrón se busca por nombre, sin distinguir mayúsculas ni espacios extra.
+
+<details>
+<summary>Ver los 44 prefijos predefinidos</summary>
 
 | Prefijo | Patrón |
 |---|---|
-| `SRC` | Server requests in client events |
-| `MSR` | Multiple server requests inside Client Actions |
+| `AGR` | Automatically generated publicly exposed REST endpoint |
+| `AQC` | Aggregate or SQL query inside a cycle |
+| `ARS` | Avoid setting Anonymous Roles to access Screens |
+| `CDE` | Consuming Deprecated Element |
+| `CMF` | Core module consumed by Foundation |
+| `CRA` | Cyclic references between applications |
 | `CSS` | CSS in the screen's style sheet |
-| `SCA` | Sequence of connected Aggregates |
-| `URA` | Unlimited records in Aggregate |
+| `DUP` | Duplicated Code |
+| `EAS` | End-User application providing services |
+| `EMS` | End-User module providing services |
+| `ERS` | Exposed REST services are not secured |
+| `ESP` | Exposed Secrets in Site Properties |
+| `FCS` | Foundation or Core module with screens |
+| `ICS` | Inline CSS style |
+| `IEL` | Inefficient empty list test |
+| `IGU` | Insecure usage of GetUserId function on client context |
+| `LIM` | Large image |
+| `LLV` | Large Local Variable in ViewState |
+| `LRE` | Large resource |
+| `LRT` | Avoid long-running Timers |
 | `LST` | Long Server Requests Timeout |
+| `LSV` | Large Session Variable |
+| `LUF` | Long undocumented flow |
+| `MDP` | Missing descriptions on public element or parameter |
+| `MSM` | Monolithic Service Module |
+| `MSR` | Multiple server requests (Aggregates or actions) inside Client Actions |
+| `MUI` | Monolithic web UI module |
+| `PER` | Public Entities aren't read-only |
+| `REM` | Reminder Comments |
+| `RRS` | Avoid setting Registered Roles to access Screens |
+| `SCA` | Sequence of connected Aggregates |
+| `SEA` | Screen Aggregate exposing System entities on Anonymous screen |
+| `SER` | Screen Aggregate exposing System entities on Registered screen |
+| `SPU` | Site Property update |
+| `SQI` | Vulnerable SQL Injection |
+| `SRC` | Server requests in client events |
+| `TDC` | Too much disabled code |
+| `TSC` | Team strongly coupled with another team |
+| `UAM` | Unused Action in Module |
+| `UAQ` | Unused Aggregate or SQL Query |
+| `ULO` | Unreachable Logic |
+| `UPT` | Unidentified public action managing transaction |
+| `URA` | Unlimited records in Aggregate |
+| `URS` | Unlimited records in SQL query |
 
-Los patrones nuevos reciben su propio prefijo y quedan registrados en `_progreso.md`.
+</details>
+
+Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefijos` de `_progreso.md`. Los ID ya asignados en un `_progreso.md` existente no cambian.
 
 ## Garantías de diseño
 
 - **Solo lectura por defecto.** Cinco de los seis comandos nunca publican, editan ni cambian estados en OutSystems.
 - **Un hallazgo a la vez.** El plugin se detiene y pregunta antes de continuar.
 - **Sin invenciones.** Lo que no se pudo leer en OutSystems queda marcado como "No verificado".
+- **Sin secretos ni datos personales.** Ningún `.md`, PDF ni mensaje en el chat copia el valor de un secreto, credencial, token o dato personal; solo el nombre y la ruta del elemento.
 - **Implementado no es validado.** Ningún documento afirma que algo fue corregido sin tu confirmación.
 
 ### Sobre `/am:fix`

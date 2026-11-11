@@ -74,6 +74,9 @@ La definición canónica está en `commands/review.md`; los demás comandos la r
   4. Solución aplicada ("Solución propuesta" mientras es borrador)
   5. Evidencia de corrección
   6. Estado final de la atención
+- **Sin secretos ni datos personales en la salida:** ningún comando copia a `.md`, PDF ni
+  al chat el valor de un secreto, credencial, token o dato personal; solo el nombre y la
+  ruta del elemento. Todo comando nuevo debe incluir esta regla.
 - **Repo genérico y público:** nada de nombres de clientes, correos, rutas de la máquina
   del usuario, reportes, Excel ni PDF. Si el usuario pasa un ejemplo real para explicar
   un cambio, no se copia al repo. `.gitignore` excluye `reportes/`, `*.xlsx` y `*.pdf`;

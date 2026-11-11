@@ -10,6 +10,10 @@ Argumento: `$ARGUMENTS` (fecha de inicio opcional; por defecto, los últimos 7 d
 Genera el resumen para la sesión de seguimiento y calibración. No consultes ni
 modifiques OutSystems: trabaja solo con `reportes/`. No modifiques `_progreso.md`.
 
+Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
+dato personal; solo el nombre y la ruta del elemento. Si un documento de origen lo
+contiene, omítelo en el resumen y avisa.
+
 1. Lee `reportes/_progreso.md`. Un hallazgo está "en el periodo" si su columna
    `Actualizado` cae entre la fecha de inicio y hoy. Si falta la columna o hay filas sin
    fecha, avisa cuántas no se pudieron ubicar en el periodo y no las inventes.

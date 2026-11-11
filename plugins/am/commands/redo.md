@@ -10,6 +10,9 @@ que hay que corregir del análisis anterior).
 
 OutSystems es solo lectura: consulta, no publiques ni edites.
 
+Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
+dato personal; solo el nombre y la ruta del elemento.
+
 Si `reportes/_progreso.md` no tiene las columnas `Estado final` y `Actualizado`,
 agrégalas (vacías) sin perder datos antes de seguir (formato en `/am:review`).
 
