@@ -1,0 +1,13 @@
+{
+  "name": "nuki23",
+  "owner": {
+    "name": "nuki23"
+  },
+  "plugins": [
+    {
+      "name": "am",
+      "source": "./plugins/am",
+      "description": "Documenta hallazgos de AI Mentor (OutSystems): PDF de solución + guía manual .md por hallazgo. Solo lectura por defecto; /am:fix implementa la solución de forma opcional cuando la conexión permite escritura"
+    }
+  ]
+}
