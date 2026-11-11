@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.2.1-2563eb)
+![versión](https://img.shields.io/badge/versión-0.2.2-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)

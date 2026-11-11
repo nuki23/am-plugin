@@ -7,7 +7,9 @@ description: Muestra el avance de los hallazgos por estado (pendiente, borrador,
 Lee `reportes/_progreso.md` y muestra, sin escribir ningún archivo:
 
 - Totales por estado: pendiente, borrador, implementado, cerrado, omitido. Los
-  `cerrado`, desglosados por `Estado final` (Resuelto / Won't fix).
+  `cerrado`, desglosados por `Estado final` (Resuelto / Won't fix). Los `omitido`
+  guardan en `Estado final` el motivo de AI Mentor (`Snooze Reason Label`): puedes
+  desglosarlos por ese motivo, pero nunca los cuentes como Resuelto ni Won't fix.
 - Avance por módulo.
 - Los `borrador` e `implementado` que esperan cierre (ID, módulo, elemento,
   `Actualizado`), para saber qué falta corregir o cerrar.

@@ -43,7 +43,9 @@ La definición canónica está en `commands/review.md`; los demás comandos la r
 ```
 
 - `Estado doc`: `pendiente`, `borrador`, `implementado`, `cerrado`, `omitido`.
-- `Estado final`: solo se llena al cerrar: `Resuelto` o `Won't fix`.
+- `Estado final`: en `cerrado`, `Resuelto` o `Won't fix` (close); en `omitido`, el valor
+  de `Snooze Reason Label` del Excel (review); vacío en los demás. Los conteos de
+  Resuelto y Won't fix (status, summary) solo consideran filas `cerrado`.
 - `Actualizado`: `AAAA-MM-DD` del último cambio de estado; lo actualiza todo comando que
   cambie el estado (review, fix, close, redo). summary filtra el periodo por esta columna.
 - Las filas van en el orden de trabajo confirmado en review: el primer `pendiente` es

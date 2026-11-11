@@ -22,12 +22,14 @@ contiene, omítelo en el resumen y avisa.
 3. Escribe `reportes/_resumenes/resumen-<AAAA-MM-DD>.md` con:
    - Periodo cubierto.
    - Cifras del periodo: cerrados (Resuelto / Won't fix), implementados y en borrador.
+     Resuelto y Won't fix se cuentan solo entre filas `cerrado`; un `omitido` guarda en
+     `Estado final` el motivo de AI Mentor y nunca cuenta como ninguno de los dos.
      Cifras acumuladas: pendientes, borrador, implementados, cerrados, omitidos, total
      y porcentaje de avance.
    - Tabla de hallazgos cerrados en el periodo: ID, módulo, elemento, estado final,
      solución en una línea.
    - Tabla de hallazgos implementados en el periodo que esperan cierre.
-   - Won't fix: los hallazgos con `Estado final` = `Won't fix`, con la justificación y
+   - Won't fix: los hallazgos `cerrado` con `Estado final` = `Won't fix`, con la justificación y
      quién la aprobó (de `## Cierre`). Aparte, los `borrador` cuyo análisis propone
      Won't fix y esperan decisión.
    - Patrones de causa que se repiten y lecciones aprendidas.

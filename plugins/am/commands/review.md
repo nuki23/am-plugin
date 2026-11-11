@@ -52,7 +52,10 @@ documentas.
 ```
 
 - `Estado doc`: `pendiente`, `borrador`, `implementado`, `cerrado` u `omitido`.
-- `Estado final`: vacío hasta el cierre; al cerrar, `Resuelto` o `Won't fix`.
+- `Estado final`: en `cerrado`, `Resuelto` o `Won't fix` (lo escribe `/am:close`). En
+  `omitido`, el valor de `Snooze Reason Label` del Excel tal cual (lo escribe
+  `/am:review`). Vacío en los demás estados. Los valores de un `omitido` nunca cuentan
+  como Resuelto ni Won't fix, aunque el texto coincida.
 - `Actualizado`: fecha `AAAA-MM-DD` del último cambio de `Estado doc`. Todo comando que
   cambie el estado la actualiza.
 - Las filas van en el orden de trabajo confirmado.
@@ -144,12 +147,15 @@ Si un `_progreso.md` existente no tiene la sección `Prefijos` o las columnas
    estados y fechas ya registrados y agrega solo los hallazgos nuevos. Si un hallazgo
    del progreso ya no aparece en un Excel nuevo, no lo borres: avisa, porque puede
    significar que AI Mentor ya lo da por resuelto.
-4. Los hallazgos cuyo `Snooze Reason Label` no sea `Open` quedan `omitido`, con el
-   motivo.
-5. Muestra el resumen (total, por módulo, por patrón) y el orden propuesto: por módulo
-   y, dentro del módulo, primero `Server requests in client events` (prioridad 1) y
-   luego los demás patrones de mayor a menor cantidad. Espera confirmación antes de
-   empezar.
+4. Los hallazgos cuyo `Snooze Reason Label` no sea `Open` quedan `omitido`, y en
+   `Estado final` se guarda el valor tal cual de `Snooze Reason Label`. Si una fila
+   `omitido` de un `_progreso.md` existente tiene `Estado final` vacío, llénalo con ese
+   valor.
+5. Muestra el resumen (total, por módulo, por patrón) y pregunta qué patrón o patrones
+   van primero. Si el usuario indica alguno, ordena por módulo y, dentro de cada módulo,
+   primero esos patrones en el orden indicado y luego los demás de mayor a menor
+   cantidad. Si no indica ninguno, ordena por módulo y luego por patrón de mayor a menor
+   cantidad. Muestra el orden resultante y espera confirmación antes de empezar.
 6. Con el orden confirmado (o ajustado por el usuario), reescribe la tabla `Hallazgos`
    en ese orden, sin cambiar el contenido de ninguna fila. Así el primer `pendiente` de
    la tabla es siempre el siguiente a trabajar.
