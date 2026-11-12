@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.2.2-2563eb)
+![versión](https://img.shields.io/badge/versión-0.3.0-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -24,9 +24,10 @@ AI Mentor exporta un Excel con los hallazgos de deuda técnica. `am` lo recorre 
 - lee el elemento afectado en OutSystems y encuentra la causa concreta;
 - escribe una **guía `.md`** con los pasos exactos para corregirlo a mano en Service Studio;
 - genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad;
+- te sugiere qué estado darle en AI Mentor (Open, Already fixed, False positive, Won't fix o Remind me later), con una justificación;
 - se detiene y te pregunta antes de pasar al siguiente.
 
-Tú aplicas la corrección, guardas los pantallazos y cierras el hallazgo con un comando.
+Tú aplicas la corrección, guardas los pantallazos, cambias el estado en AI Mentor y cierras el hallazgo con un comando.
 
 ## Instalación
 
@@ -67,72 +68,91 @@ Para traer una versión nueva:
 | Comando | Qué hace | Escribe en OutSystems |
 |---|---|:---:|
 | `/am:review [excel]` | Carga el Excel y documenta los hallazgos uno a uno. Sin argumento, continúa donde quedó. | No |
-| `/am:close <ID>` | Cierra un hallazgo como **Resuelto** (con evidencia) o **Won't fix** (con justificación escrita y quién aprobó la decisión). | No |
+| `/am:close <ID>` | Cierra un hallazgo con su estado final (ver abajo). Con **Remind me later** no cierra: anota el motivo y lo deja como estaba. | No |
 | `/am:redo <ID> [nota]` | Rehace el análisis de un hallazgo cuando algo salió mal. | No |
 | `/am:status` | Muestra el avance por estado y por módulo. | No |
 | `/am:summary [desde]` | Genera el reporte resumen del periodo (últimos 7 días por defecto). | No |
+| `/am:clean [pending\|drafts\|all]` | Archiva pendientes, borradores o todo `reports/` en `reports/_archive/<fecha>/`. Nunca borra; lista lo que va a mover y espera tu sí. `all` exige escribir `ARCHIVAR TODO`. | No |
 | `/am:fix <ID>` | *Opcional.* Implementa la solución ya documentada. Requiere conexión con escritura. | **Sí** |
+
+### Estados finales
+
+`/am:close` acepta estos estados, con el mismo vocabulario de AI Mentor. El plugin nunca cambia el estado en AI Mentor: solo lo recomienda.
+
+| Estado final | Qué exige |
+|---|---|
+| `Fixed` | Corrección aplicada; pantallazos en `evidence/` |
+| `Already fixed` | El problema ya no existe en el código; pantallazos en `evidence/` |
+| `False positive` | Justificación escrita y quién aprobó la decisión |
+| `Won't fix` | Justificación escrita y quién aprobó la decisión |
 
 ## Flujo de trabajo
 
 ```mermaid
 stateDiagram-v2
     direction LR
-    [*] --> pendiente: Excel cargado
-    [*] --> omitido: Excel cargado, ya gestionado en AI Mentor
-    pendiente --> borrador: /am#58;review
-    borrador --> implementado: /am#58;fix (opcional)
-    borrador --> cerrado: /am#58;close
-    implementado --> cerrado: /am#58;close
-    borrador --> borrador: /am#58;redo
-    implementado --> borrador: /am#58;redo (cambia la solución)
-    cerrado --> borrador: /am#58;redo (cambia la solución)
-    cerrado --> [*]
-    omitido --> [*]
+    [*] --> pending: Excel cargado
+    [*] --> skipped: Excel cargado, ya gestionado en AI Mentor
+    pending --> draft: /am#58;review
+    draft --> implemented: /am#58;fix (opcional)
+    draft --> closed: /am#58;close
+    implemented --> closed: /am#58;close
+    draft --> draft: /am#58;redo o /am#58;close (Remind me later)
+    implemented --> draft: /am#58;redo (cambia la solución)
+    closed --> draft: /am#58;redo (cambia la solución)
+    pending --> [*]: /am#58;clean pending
+    draft --> [*]: /am#58;clean drafts
+    closed --> [*]
+    skipped --> [*]
 ```
 
 | Estado | Significa |
 |---|---|
-| `pendiente` | Está en el Excel y aún no se analiza |
-| `borrador` | Tiene guía y PDF en borrador; falta corregirlo |
-| `implementado` | La corrección se aplicó con `/am:fix`; falta validar y cerrar |
-| `cerrado` | Resuelto o Won't fix, con PDF final |
-| `omitido` | Ya venía gestionado en AI Mentor |
+| `pending` | Está en el Excel y aún no se analiza |
+| `draft` | Tiene guía y PDF en borrador; falta corregirlo o decidir |
+| `implemented` | La corrección se aplicó con `/am:fix`; falta validar y cerrar |
+| `closed` | Fixed, Already fixed, False positive o Won't fix, con PDF final |
+| `skipped` | Ya venía gestionado en AI Mentor (se guarda su motivo) |
+
+`/am:clean all` archiva todo, sin importar el estado, para empezar con un Excel nuevo.
 
 ## Qué genera
 
 Todo queda en la carpeta donde ejecutas Claude Code:
 
 ```
-reportes/
-├── _progreso.md                  avance de todos los hallazgos
-├── _resumenes/                   reportes de /am:summary
-└── <Módulo>/
-    └── <ID>-<Elemento>/
-        ├── solucion.md           guía para corregirlo a mano
-        ├── solucion.pdf          documento formal
-        ├── implementacion.md     solo si usaste /am:fix
-        └── evidencia/            tus pantallazos
+reports/
+├── _progress.md                  avance de todos los hallazgos
+├── _summaries/                   summary-<fecha>.md y .pdf de /am:summary
+├── _archive/<fecha>/             lo que movió /am:clean
+└── <Module>/
+    └── <ID>-<Object Name>/
+        ├── solution.md                         guía para corregirlo a mano
+        ├── <Module>-<Object Name>-<Prefix>.pdf documento formal
+        ├── implementation.md                   solo si usaste /am:fix
+        └── evidence/                           tus pantallazos
 scripts/
-└── generar_pdf.py | .mjs         se crea una vez y se reutiliza
+└── generate_pdf.py | .mjs        se crea una vez y se reutiliza
 ```
+
+Los nombres de archivos y carpetas van en inglés; el contenido de los documentos, en español. El PDF se llama, por ejemplo, `Ventas-ValidarPedido-SRC.pdf`: se limpian los caracteres no válidos y, si dos nombres chocan, se agrega un sufijo numérico.
 
 ### El PDF de solución
 
 Siempre con estas seis secciones:
 
-1. Identificación del hallazgo
+1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path y fecha de análisis)
 2. Módulo afectado
 3. Descripción de la causa identificada
 4. Solución aplicada
 5. Evidencia de corrección
 6. Estado final de la atención
 
-Mientras el hallazgo está en `borrador`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final.
+Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
 
 ### Identificadores
 
-El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patrón: prefijo de 3 letras + consecutivo (por ejemplo, `SRC-003`). El patrón se busca por nombre, sin distinguir mayúsculas ni espacios extra.
+El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patrón: prefijo de 3 letras + consecutivo (por ejemplo, `SRC-003`). Es un ID interno: aparece en `_progress.md`, en el nombre de la carpeta y en el chat (es el argumento de `/am:close`, `/am:redo` y `/am:fix`), pero no en los documentos que se entregan. El patrón se busca por nombre, sin distinguir mayúsculas ni espacios extra.
 
 <details>
 <summary>Ver los 44 prefijos predefinidos</summary>
@@ -186,11 +206,13 @@ El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patró
 
 </details>
 
-Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefijos` de `_progreso.md`. Los ID ya asignados en un `_progreso.md` existente no cambian.
+Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefixes` de `_progress.md`. Los ID ya asignados en un `_progress.md` existente no cambian.
 
 ## Garantías de diseño
 
-- **Solo lectura por defecto.** Cinco de los seis comandos nunca publican, editan ni cambian estados en OutSystems.
+- **Solo lectura por defecto.** Seis de los siete comandos nunca publican ni editan en OutSystems.
+- **AI Mentor lo cambias tú.** El plugin recomienda un estado, pero nunca lo cambia, y no sugiere False positive ni Won't fix sin explicar qué verificó en el código.
+- **Nunca borra.** `/am:clean` siempre archiva en `reports/_archive/`.
 - **Un hallazgo a la vez.** El plugin se detiene y pregunta antes de continuar.
 - **Sin invenciones.** Lo que no se pudo leer en OutSystems queda marcado como "No verificado".
 - **Sin secretos ni datos personales.** Ningún `.md`, PDF ni mensaje en el chat copia el valor de un secreto, credencial, token o dato personal; solo el nombre y la ruta del elemento.
@@ -202,4 +224,4 @@ Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de t
 
 ## Privacidad
 
-`reportes/` contiene información de tu aplicación. Trabaja en una carpeta distinta a este repositorio y no la subas a un repo público.
+`reports/` contiene información de tu aplicación. Trabaja en una carpeta distinta a este repositorio y no la subas a un repo público.

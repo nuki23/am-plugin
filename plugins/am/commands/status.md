@@ -1,24 +1,26 @@
 ---
-description: Muestra el avance de los hallazgos por estado (pendiente, borrador, implementado, cerrado, omitido) sin modificar nada
+description: Muestra el avance de los hallazgos por estado (pending, draft, implemented, closed, skipped) sin modificar nada
 ---
 
 # /am:status
 
-Lee `reportes/_progreso.md` y muestra, sin escribir ningún archivo:
+Lee `reports/_progress.md` (formato definido en `/am:review`) y muestra, sin escribir
+ningún archivo:
 
-- Totales por estado: pendiente, borrador, implementado, cerrado, omitido. Los
-  `cerrado`, desglosados por `Estado final` (Resuelto / Won't fix). Los `omitido`
-  guardan en `Estado final` el motivo de AI Mentor (`Snooze Reason Label`): puedes
-  desglosarlos por ese motivo, pero nunca los cuentes como Resuelto ni Won't fix.
+- Totales por estado: `pending`, `draft`, `implemented`, `closed`, `skipped`.
+- Los `closed`, desglosados por `Final status`: Fixed, Already fixed, False positive,
+  Won't fix.
+- Los `skipped` guardan en `Final status` el motivo de AI Mentor (`Snooze Reason
+  Label`): puedes desglosarlos por ese motivo, pero nunca los sumes a los `closed`,
+  aunque el texto coincida.
 - Avance por módulo.
-- Los `borrador` e `implementado` que esperan cierre (ID, módulo, elemento,
-  `Actualizado`), para saber qué falta corregir o cerrar.
-- El siguiente `pendiente` que tomaría `/am:review` (el primero de la tabla).
+- Los `draft` e `implemented` que esperan cierre (ID, módulo, elemento, `Updated`),
+  para saber qué falta corregir o cerrar.
+- El siguiente `pending` que tomaría `/am:review` (el primero de la tabla).
+
+Ignora `reports/_archive/`.
 
 Nunca muestres en el chat el valor de un secreto, credencial, token o dato personal;
 solo el nombre y la ruta del elemento.
-
-Si el archivo no tiene las columnas `Estado final` o `Actualizado`, trátalas como vacías
-y avisa que el próximo comando que cambie un estado las agregará; no edites el archivo.
 
 Si el archivo no existe, indica que primero hay que correr `/am:review <excel>`.
