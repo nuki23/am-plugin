@@ -99,7 +99,8 @@ rápida") que debe coincidir con ella.
   no cambie entre versiones.
 - **Título del PDF:** `<Parent> > <Object Name>` (solo `<Object Name>` si no hay
   padre), con los nombres tal cual vienen en el Excel, sin limpiar. El título se
-  calcula siempre así, aunque el archivo conserve un nombre anterior.
+  calcula siempre así, aunque el archivo conserve un nombre anterior. Va en la fuente
+  normal de los títulos, no en monoespaciada.
 
 ## Prefijos de patrón (referencia fija)
 
@@ -219,6 +220,11 @@ rápida") que debe coincidir con ella.
      otro módulo del mismo ambiente, considera referenciar una Server Action o una
      Service Action de ese módulo. Propón el REST solo si explicas por qué la
      referencia no sirve en este caso.
+   - **Retirar lo que no tiene efecto.** Si el análisis concluye que el código hoy no
+     tiene efecto (no se ejecuta, su resultado no se usa, su condición nunca se
+     cumple), "Retirarlo" aparece entre las alternativas, con lo que habría que
+     confirmar antes de hacerlo (por ejemplo, que nada más lo consume o que no se
+     espera reactivarlo).
 4. Evalúa el impacto: qué más consume lo que se va a tocar y qué hay que volver a probar.
 5. **Cambio de comportamiento.** Comprueba si la solución recomendada hace algo más que
    eliminar el patrón: arregla un bug, activa lógica que hoy no se ejecuta, cambia
@@ -238,7 +244,17 @@ rápida") que debe coincidir con ella.
    (seguridad, datos, un bug) que no es parte de este hallazgo, no lo mezcles con la
    solución ni lo corrijas de paso: va en el apartado "Observaciones fuera del alcance"
    (Paso 2) y se destaca en el reporte (Paso 3) para que el usuario lo reporte aparte.
-8. Elige el **Estado sugerido en AI Mentor**, con una justificación de una línea:
+8. **Consultar antes de implementar.** Reúne lo que el usuario tendría que consultar
+   antes de aplicar la solución. Hay algo que consultar cuando el hallazgo tiene:
+   - "Cambio de comportamiento" (paso 5);
+   - "Observaciones fuera del alcance" (paso 7);
+   - una alternativa que depende de algo que no está en este módulo;
+   - puntos no verificados que el usuario no puede confirmar solo (los que puede
+     comprobar él mismo en Service Studio o en la aplicación no cuentan).
+
+   Si hay al menos un punto, el hallazgo **requiere consulta** y se escribe el apartado
+   "Consultar antes de implementar" (Paso 2). Si no hay ninguno, el apartado no existe.
+9. Elige el **Estado sugerido en AI Mentor**, con una justificación de una línea:
    - `Open`: hay que corregirlo (lo normal; la solución de arriba aplica).
    - `Already fixed`: el problema ya no existe en el código actual.
    - `False positive`: el patrón no aplica a este caso concreto.
@@ -267,6 +283,13 @@ reports/
   Object Path y Fecha de análisis, con esas etiquetas y en ese orden (los comandos que
   regeneran el PDF los toman de aquí).
 - **Estado sugerido en AI Mentor:** el valor y su justificación de una línea.
+- **Consultar antes de implementar** (`## Consultar antes de implementar`; solo si hay
+  algo que consultar, ver Paso 1.8). Va justo aquí, para que sea lo primero que se lea.
+  Es una lista corta, un punto por cosa a consultar, cada uno redactado como una
+  pregunta lista para copiar y enviar: completa por sí sola, con el nombre del elemento
+  y el contexto mínimo para entenderla sin leer el resto del documento. No indiques a
+  quién va ni menciones personas, roles ni equipos. Aplican las reglas 7 y 8: sin
+  valores de secretos ni datos personales, y sin el ID. No va en el PDF.
 - Resumen del hallazgo en dos líneas.
 - Dónde está: módulo → flujo/pantalla → elemento, como se navega en Service Studio.
 - Por qué AI Mentor lo marca en este caso concreto.
@@ -278,7 +301,8 @@ reports/
   este cambio. Si la solución solo elimina el patrón, este apartado no existe.
 - Pasos manuales numerados, uno por acción en Service Studio, con nombres exactos.
 - Alternativas consideradas. Incluye siempre la "Alternativa mínima" (Paso 1.3),
-  rotulada así, con su costo y riesgo; si es la recomendada, dilo.
+  rotulada así, con su costo y riesgo; si es la recomendada, dilo. Si el código hoy no
+  tiene efecto, incluye también "Retirarlo", con lo que habría que confirmar antes.
 - Impacto y qué probar después (casos funcionales concretos).
 - Cómo verificar en AI Mentor tras republicar y reanalizar.
 - Qué pantallazos tomar para la evidencia (antes / después / AI Mentor).
@@ -318,7 +342,13 @@ Dentro de esas secciones:
   sola línea: "Durante el análisis se identificaron observaciones fuera del alcance de
   este hallazgo; se reportan por separado." Sin detalle, categoría ni cantidad.
 
-El estado sugerido en AI Mentor es una recomendación interna: no va en el PDF.
+El estado sugerido en AI Mentor es una recomendación interna: no va en el PDF. Tampoco
+van "Consultar antes de implementar" ni "Hallazgos relacionados".
+
+**El PDF nunca afirma algo con más certeza que `solution.md`.** Si allí dice "No
+verificado", "probable", "al parecer" o cualquier otra cautela, el PDF la conserva con
+el mismo alcance: resumir no es motivo para convertir una hipótesis en un hecho. Esto
+vale para las seis secciones, en borrador y en final.
 
 Aquí la corrección aún no existe, así que el PDF sale como **BORRADOR** (marcado
 visiblemente): la sección 4 se titula "Solución propuesta", la 5 dice "Pendiente — se
@@ -327,8 +357,9 @@ corregido o validado sin confirmación del usuario.
 
 Genera el PDF como indica "Generación de PDF" (abajo), con el nombre de "Nombres de
 archivo". Abre el PDF y verifica el título, las seis secciones, las ocho etiquetas de
-la sección 1, que los identificadores salen en monoespaciada y sin partirse, y que
-ninguna sección quedó sola en la última página, antes de darlo por terminado.
+la sección 1, que los identificadores salen en monoespaciada y sin partirse (el título,
+en fuente normal), que ninguna frase afirma más que `solution.md` y que ninguna sección
+quedó sola en la última página, antes de darlo por terminado.
 
 ### Generación de PDF
 
@@ -364,7 +395,9 @@ script recibe la ruta de salida y el título; no calcula nombres ni incluye el I
     Object Path) se imprimen en fuente monoespaciada y no se parten al final de la
     línea: si uno no cabe en lo que queda del renglón, pasa entero al siguiente. Solo
     uno más largo que el renglón completo puede partirse, y únicamente en sus
-    separadores (` > `, `/`, `.`), nunca dentro de un nombre.
+    separadores (` > `, `/`, `.`), nunca dentro de un nombre. La excepción es el
+    título del documento: aunque lleva nombres de elementos, va en la fuente normal de
+    los títulos.
   - **Saltos de página:** el título de una sección nunca se separa de su primer
     contenido, y ninguna sección queda sola en la última página. Las secciones cortas
     (como la 5 y la 6 en borrador) se mantienen juntas y unidas al final de la sección
@@ -380,6 +413,8 @@ script recibe la ruta de salida y el título; no calcula nombres ni incluye el I
    Mentor** con su justificación, carpeta, nombre del PDF y avance (`N de M`). Si el
    PDF quedó pendiente por falta de Python o Node, dilo aquí. Además, cuando aplique y
    de forma destacada:
+   - **Requiere consulta:** dilo con esas palabras y con cuántos puntos hay en
+     "Consultar antes de implementar" (por ejemplo, "Requiere consulta: 3 puntos").
    - **Requiere decisión funcional:** qué comportamiento cambia, en una o dos líneas, y
      cuál es la alternativa mínima que no lo cambia. Avisa que `/am:fix` no lo
      implementará sin confirmar que la decisión se tomó.

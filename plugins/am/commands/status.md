@@ -4,8 +4,9 @@ description: Muestra el avance de los hallazgos por estado (pending, draft, impl
 
 # /am:status
 
-Lee `reports/_progress.md` (formato en "Referencia rápida", abajo) y muestra, sin escribir
-ningún archivo:
+Lee `reports/_progress.md` (formato en "Referencia rápida", abajo) y, solo para la lista
+"Requieren consulta", el `solution.md` de los hallazgos `draft` e `implemented`. Muestra,
+sin escribir ningún archivo:
 
 - Totales por estado: `pending`, `draft`, `implemented`, `closed`, `skipped`.
 - Los `closed`, desglosados por `Final status`: Fixed, Already fixed, False positive,
@@ -16,6 +17,12 @@ ningún archivo:
 - Avance por módulo.
 - Los `draft` e `implemented` que esperan cierre (ID, módulo, elemento, `Updated`),
   para saber qué falta corregir o cerrar.
+- **Requieren consulta**, en una lista aparte: los `draft` e `implemented` cuyo
+  `solution.md` (en la carpeta de la columna `Folder`) tiene el apartado
+  `## Consultar antes de implementar`. Por cada uno: ID, módulo, elemento, estado y
+  cuántos puntos hay que consultar. No copies las preguntas; para leerlas está
+  `solution.md`. Si ninguno lo tiene, dilo en una línea. Si falta el `solution.md` de
+  alguno, repórtalo como "No verificado" en vez de darlo por libre de consulta.
 - El siguiente `pending` que tomaría `/am:review` (el primero de la tabla).
 
 Ignora `reports/_archive/`.

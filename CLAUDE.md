@@ -76,8 +76,18 @@ un resumen (bloque "Referencia rápida").
   - arriba, la identificación (App, Module, Category, Pattern Name, Object Name,
     Object Type, Object Path, fecha de análisis) y el "Estado sugerido en AI Mentor"
     con una justificación de una línea (review, redo);
+  - `## Consultar antes de implementar`, justo después del estado sugerido y solo si
+    hay algo que consultar (cambio de comportamiento, observaciones fuera del alcance,
+    una alternativa que depende de algo fuera del módulo, o puntos no verificados que
+    el usuario no puede confirmar solo): lista corta de preguntas listas para copiar,
+    sin indicar a quién van ni mencionar personas, roles ni equipos. No va en el PDF.
+    En el chat, "Requiere consulta" y cuántos puntos (escriben review y redo; lo leen
+    status, que lista aparte los `draft` e `implemented` que lo tienen, y fix, que
+    exige confirmar que las consultas se resolvieron);
   - "Alternativas consideradas", siempre con la "Alternativa mínima": la de menor
-    cambio que elimina el patrón sin alterar el comportamiento (review, redo);
+    cambio que elimina el patrón sin alterar el comportamiento, y con "Retirarlo" si
+    el código hoy no tiene efecto, junto a lo que habría que confirmar antes (review,
+    redo);
   - `## Cambio de comportamiento`, solo si la solución hace algo más que eliminar el
     patrón; empieza con "Requiere decisión funcional" (escriben review y redo; lo leen
     fix y close);
@@ -115,6 +125,9 @@ un resumen (bloque "Referencia rápida").
   cambio dentro de esa misma invocación. `/am:fix` mantiene `disable-model-invocation: true`.
   Si `solution.md` tiene `## Cambio de comportamiento`, `/am:fix` se niega a implementar
   sin que el usuario confirme, en esa invocación, que la decisión funcional se tomó.
+  Si tiene `## Consultar antes de implementar`, muestra las preguntas y se detiene sin
+  un sí, dado en esa invocación, a que ya se resolvieron. Son dos comprobaciones
+  separadas: el sí de una no vale para la otra.
 - **Solución sin sorpresas:** review y redo incluyen siempre la alternativa mínima,
   consideran referenciar una Server Action o Service Action antes de proponer un REST
   de otro módulo del mismo ambiente, declaran todo cambio de comportamiento
@@ -158,7 +171,10 @@ un resumen (bloque "Referencia rápida").
 
   El script no deja una sección sola en la última página ni separa un título de su
   contenido. Los identificadores van en fuente monoespaciada y no se parten al final
-  de la línea.
+  de la línea; el título del documento va en la fuente normal de los títulos.
+- **El PDF nunca afirma más que `solution.md`:** si la guía dice "No verificado" o
+  "probable", el PDF usa la misma cautela (review, redo, close). "Consultar antes de
+  implementar" y "Hallazgos relacionados" no van en el PDF.
 - **Sin secretos ni datos personales en la salida:** ningún comando copia a `.md`, PDF ni
   al chat el valor de un secreto, credencial, token o dato personal; solo el nombre y la
   ruta del elemento. Todo comando nuevo debe incluir esta regla.

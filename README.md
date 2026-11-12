@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.3.2-2563eb)
+![versión](https://img.shields.io/badge/versión-0.3.3-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -72,7 +72,7 @@ Para traer una versión nueva:
 | `/am:review [excel]` | Carga el Excel y documenta los hallazgos uno a uno. Sin argumento, continúa donde quedó. | No |
 | `/am:close <ID>` | Cierra un hallazgo con su estado final (ver abajo). Con **Remind me later** no cierra: anota el motivo y lo deja como estaba. | No |
 | `/am:redo <ID> [nota]` | Rehace el análisis de un hallazgo cuando algo salió mal. | No |
-| `/am:status` | Muestra el avance por estado y por módulo. | No |
+| `/am:status` | Muestra el avance por estado y por módulo, y lista aparte los hallazgos que requieren consulta. | No |
 | `/am:summary [desde]` | Genera el reporte resumen del periodo (últimos 7 días por defecto). | No |
 | `/am:clean [pending\|drafts\|all]` | Archiva pendientes, borradores o todo `reports/` en `reports/_archive/<fecha>/`. Nunca borra; lista lo que va a mover y espera tu sí. `all` exige escribir `ARCHIVAR TODO`. | No |
 | `/am:fix <ID>` | *Opcional.* Implementa la solución ya documentada. Requiere conexión con escritura. | **Sí** |
@@ -145,14 +145,15 @@ Los nombres de archivos y carpetas van en inglés; el contenido de los documento
 
 Además de los pasos manuales, la guía trae:
 
-- **Alternativas consideradas**, siempre con la *alternativa mínima*: la opción de menor cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea la recomendada. Antes de proponer consumir un REST de otro módulo del mismo ambiente, el plugin considera referenciar una Server Action o Service Action de ese módulo.
+- **Consultar antes de implementar**, solo cuando hay algo que consultar: un cambio de comportamiento, observaciones fuera del alcance, una alternativa que depende de algo fuera del módulo, o puntos no verificados que no puedes confirmar solo. Va al inicio, justo después del estado sugerido, como una lista corta de preguntas listas para copiar, sin mencionar personas, roles ni equipos. En el chat el hallazgo sale como **Requiere consulta**, con el número de puntos, y `/am:status` lista aparte los hallazgos que lo tienen. No va en el PDF.
+- **Alternativas consideradas**, siempre con la *alternativa mínima*: la opción de menor cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea la recomendada. Si el código hoy no tiene efecto, "retirarlo" aparece entre las alternativas, con lo que habría que confirmar antes. Antes de proponer consumir un REST de otro módulo del mismo ambiente, el plugin considera referenciar una Server Action o Service Action de ese módulo.
 - **Cambio de comportamiento**, solo cuando la solución hace algo más que eliminar el patrón (arregla un bug, activa lógica que hoy no se ejecuta, cambia datos que se escriben o borran, crea integraciones). El hallazgo queda marcado como **Requiere decisión funcional** en el chat y `/am:fix` no lo implementa sin que confirmes que la decisión se tomó.
 - **Hallazgos relacionados**, solo cuando otro hallazgo del progreso toca el mismo elemento, tema o acción compartida. Se identifican por pantalla y patrón (el ID solo se menciona en el chat) y la guía indica si conviene corregirlos juntos para publicar una sola vez.
 - **Observaciones fuera del alcance**, solo cuando el análisis encuentra algo de otra categoría (seguridad, datos, un bug). Se destacan en el chat para que las reportes aparte; el PDF solo dice, en una línea, que se reportan por separado. Al cerrar, `/am:close` te pregunta si ya las reportaste, y solo entonces el PDF final lo dice en pasado.
 
 ### El PDF de solución
 
-El título es `<Parent> > <Object Name>` (por ejemplo, "PedidoDetalle > ValidarPedido"). Los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea. Siempre con estas seis secciones:
+El título es `<Parent> > <Object Name>` (por ejemplo, "PedidoDetalle > ValidarPedido"), en la fuente normal de los títulos. En el resto del documento, los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea. Siempre con estas seis secciones:
 
 1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path y Fecha de análisis, con esas etiquetas y en ese orden)
 2. Módulo afectado
@@ -227,13 +228,13 @@ Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que 
 - **AI Mentor lo cambias tú.** El plugin recomienda un estado, pero nunca lo cambia, y no sugiere False positive ni Won't fix sin explicar qué verificó en el código.
 - **Nunca borra.** `/am:clean` siempre archiva en `reports/_archive/`.
 - **Un hallazgo a la vez.** El plugin se detiene y pregunta antes de continuar.
-- **Sin invenciones.** Lo que no se pudo leer en OutSystems queda marcado como "No verificado".
+- **Sin invenciones.** Lo que no se pudo leer en OutSystems queda marcado como "No verificado", y el PDF nunca afirma algo con más certeza que la guía: si allí dice "no verificado" o "probable", el PDF usa la misma cautela.
 - **Sin secretos ni datos personales.** Ningún `.md`, PDF ni mensaje en el chat copia el valor de un secreto, credencial, token o dato personal; solo el nombre y la ruta del elemento.
 - **Implementado no es validado.** Ningún documento afirma que algo fue corregido sin tu confirmación.
 
 ### Sobre `/am:fix`
 
-Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
+Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
 
 ## Privacidad
 

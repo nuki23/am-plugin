@@ -109,7 +109,11 @@ completa es `/am:review`.
     el nombre del `.pdf` que ya está en la carpeta. Si la generación falla pese a la
     comprobación del paso 9, quita la sección `## Cierre` que acabas de escribir, no
     marques el hallazgo `closed`, avisa y pregunta cómo seguir. Contenido:
-    - Título `<Parent> > <Object Name>` y sección 1 con las ocho etiquetas, en este
+    - El PDF nunca afirma algo con más certeza que sus fuentes (`solution.md`,
+      `implementation.md` y lo que el usuario confirmó en este cierre): si allí dice
+      "No verificado" o "probable", el PDF usa la misma cautela. "Consultar antes de
+      implementar" y "Hallazgos relacionados" no van en el PDF.
+    - Título `<Parent> > <Object Name>`, en fuente normal (no monoespaciada), y sección 1 con las ocho etiquetas, en este
       orden: App, Module, Category, Pattern Name, Object Name, Object Type, Object
       Path, Fecha de análisis.
     - Sección 3: si `solution.md` tiene `## Observaciones fuera del alcance`, termina

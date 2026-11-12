@@ -64,22 +64,29 @@ completa es `/am:review`.
    cuenta, y la aprobación del plan (Paso 2) no lo reemplaza. Si la decisión fue ir por
    la alternativa mínima u otra distinta de la documentada, no la implementes desde
    aquí: sugiere `/am:redo` para que `solution.md` refleje lo decidido.
-4. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
+4. **Consultas pendientes.** Si `solution.md` tiene el apartado
+   `## Consultar antes de implementar`, muestra sus preguntas tal como están y pregunta
+   si ya se resolvieron todas. Sin un sí explícito dentro de esta invocación, detente y
+   termina; un sí anterior en la conversación no cuenta. Es una comprobación aparte de
+   la de decisión funcional: el sí de una no vale para la otra, y la aprobación del
+   plan (Paso 2) no reemplaza a ninguna. Si alguna respuesta cambia la solución
+   documentada, no la adaptes desde aquí: sugiere `/am:redo`.
+5. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
    en esta sesión. Si ninguna permite editar y publicar, dilo así: "Esta conexión a
    OutSystems es solo lectura; aplica `solution.md` a mano y luego usa `/am:close`", y
    termina. No busques rutas alternas (automatizar el navegador, APIs no documentadas,
    scripts propios).
-5. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
+6. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
    determinarlo, pregunta. Nunca modifiques QA, Preproducción ni Producción, y nunca
    despliegues entre ambientes.
-6. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
+7. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
    `solution.md`. Si ya no coinciden con lo documentado (alguien cambió la pantalla, la
    acción ya no existe, el hallazgo ya fue corregido), detente y sugiere `/am:redo`.
    Lo mismo si al releer ves que los pasos cambian el comportamiento (arreglan un bug,
    activan lógica que hoy no se ejecuta, cambian datos que se escriben o se borran,
    crean integraciones) y `solution.md` no tiene el apartado
    `## Cambio de comportamiento`.
-7. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
+8. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
    `solution.md`. Sin un sí, no sigas.
 
 ## Paso 2 — Plan de cambio
@@ -114,7 +121,9 @@ anterior en la conversación no cuenta.
    cambios realmente aplicados (elemento por elemento), versión publicada si aplica,
    desviaciones respecto a `solution.md`, y otros hallazgos observados sin tocar. Si
    el hallazgo requería decisión funcional, anota que el usuario confirmó que se tomó,
-   quién la tomó (el nombre o rol que dio; nunca un correo) y la fecha. Si
+   quién la tomó (el nombre o rol que dio; nunca un correo) y la fecha. Si tenía
+   "Consultar antes de implementar", anota que el usuario confirmó que las consultas
+   estaban resueltas y la fecha, sin copiar las respuestas. Si
    `implementation.md` ya existe (por una solución anterior rehecha con `/am:redo`), no
    lo borres: agrega la nueva implementación como sección fechada al final.
 3. Actualiza la fila en `_progress.md`: `Doc status` = `implemented`, `Updated` = hoy.

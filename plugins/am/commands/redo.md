@@ -63,6 +63,8 @@ completa es `/am:review`.
    - Identificación (App, Module, Category, Pattern Name, Object Name, Object Type,
      Object Path y Fecha de análisis, con esas etiquetas y en ese orden)
    - Estado sugerido en AI Mentor, con su justificación de una línea
+   - Consultar antes de implementar (`## Consultar antes de implementar`), solo si hay
+     algo que consultar
    - Resumen del hallazgo
    - Dónde está
    - Por qué AI Mentor lo marca
@@ -85,6 +87,9 @@ completa es `/am:review`.
    - **Alternativa mínima:** incluye siempre la opción de menor cambio que elimina el
      patrón sin alterar el comportamiento actual, aunque no sea la recomendada; si no
      existe, dilo y explica por qué.
+   - **Retirar lo que no tiene efecto:** si el análisis concluye que el código hoy no
+     tiene efecto, "Retirarlo" aparece entre las alternativas, con lo que habría que
+     confirmar antes.
    - **Referencia antes que REST:** antes de proponer consumir un REST de otro módulo
      del mismo ambiente, considera referenciar una Server Action o una Service Action
      de ese módulo.
@@ -102,13 +107,21 @@ completa es `/am:review`.
    - **Observaciones fuera del alcance:** lo que encuentres de otra categoría
      (seguridad, datos, bug) va en ese apartado, no en la solución; conserva las
      observaciones anteriores que sigan vigentes.
+   - **Consultar antes de implementar:** vuelve a evaluar si hay algo que consultar:
+     "Cambio de comportamiento", "Observaciones fuera del alcance", una alternativa que
+     depende de algo que no está en este módulo, o puntos no verificados que el usuario
+     no puede confirmar solo. Si lo hay, escribe el apartado justo después de "Estado
+     sugerido en AI Mentor": una lista corta, cada punto redactado como pregunta lista
+     para copiar, sin indicar a quién va ni mencionar personas, roles ni equipos, y sin
+     secretos ni datos personales. Si ya no hay nada que consultar (por ejemplo, la
+     nota del usuario trae la respuesta), quita el apartado. No va en el PDF.
    - **Identificadores:** clases CSS, nombres de acciones y demás elementos, y rutas,
      van entre comillas invertidas; el PDF los muestra en fuente monoespaciada y sin
      partirlos al final de la línea.
 6. Estado al terminar. Regenera el PDF de solución (tipo `finding`), reutilizando el
    nombre del `.pdf` que ya está en la carpeta; si no hay Python ni Node, avisa que el
    PDF queda pendiente y pregunta cómo seguir. El PDF sigue el formato de `/am:review`:
-   título `<Parent> > <Object Name>`, las ocho etiquetas de la sección 1 (App, Module,
+   título `<Parent> > <Object Name>` en fuente normal (no monoespaciada), las ocho etiquetas de la sección 1 (App, Module,
    Category, Pattern Name, Object Name, Object Type, Object Path, Fecha de análisis),
    el apartado "Cambio de comportamiento" en la sección 4 si existe en `solution.md`,
    una sola línea al final de la sección 3 si hay observaciones fuera del alcance
@@ -117,7 +130,8 @@ completa es `/am:review`.
    partirse, y ninguna sección sola en la última página. Esa línea solo va en pasado
    ("se reportaron por separado") en un PDF final cuya sección `## Cierre` registra
    que el usuario confirmó que ya las reportó; si quitas `## Cierre`, vuelve al
-   presente.
+   presente. El PDF nunca afirma algo con más certeza que `solution.md`: si allí dice
+   "No verificado" o "probable", el PDF usa la misma cautela.
    - **Si la solución cambió, queda `draft`**: PDF en modo borrador, vacía
      `Final status` y quita la sección `## Cierre` de `solution.md` si existía. Si
      estaba `implemented`, además avisa claramente que lo implementado en OutSystems ya
@@ -130,7 +144,8 @@ completa es `/am:review`.
 7. Si el estado cambió, actualiza la fila en `_progress.md`: `Doc status`,
    `Final status` si corresponde, y `Updated` = hoy.
 8. Resume qué cambió respecto a la versión anterior, el estado sugerido en AI Mentor y
-   en qué estado quedó el hallazgo. Destaca, cuando aplique, **Requiere decisión
+   en qué estado quedó el hallazgo. Destaca, cuando aplique, **Requiere consulta**
+   (con esas palabras y cuántos puntos), **Requiere decisión
    funcional** (qué comportamiento cambia y cuál es la alternativa mínima), los
    **Hallazgos relacionados** (en el chat sí con su ID, y si conviene corregirlos
    juntos) y las **Observaciones fuera del alcance**, para que el usuario las reporte
