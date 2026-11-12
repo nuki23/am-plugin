@@ -41,12 +41,24 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> > <Object Name>`. No lleva el ID.
-- **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
-  si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
-  de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
-  instalar la librería, nunca el lenguaje. Sin Python ni Node, el PDF queda pendiente:
-  avisa y pregunta cómo seguir.
+  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
+  está en la misma carpeta.
+- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
+  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
+  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
+  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
+  `reports/_template/` si no están o si su versión (primer comentario de
+  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
+- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
+  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
+  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
+  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
+  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
+  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
+  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
+  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
+  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
+  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
 
 ## Pasos
@@ -76,11 +88,27 @@ completa es `/am:review`.
    - Patrones de causa que se repiten y lecciones aprendidas.
    - Dudas técnicas o funcionales abiertas para llevar a la sesión.
    - Plan propuesto para la semana siguiente (qué módulo sigue).
-4. Genera el mismo contenido en PDF como `reports/_summaries/summary-<AAAA-MM-DD>.pdf`
-   (tipo `summary`), como indica "Script de PDF" en "Referencia rápida": reutiliza el
-   script existente o, si no hay, créalo con Python o Node según lo disponible. Si no
-   hay ninguno de los dos, deja solo el .md, avisa que el PDF queda pendiente y
-   pregunta cómo seguir.
+4. Genera el mismo contenido en PDF como `reports/_summaries/summary-<AAAA-MM-DD>.pdf`,
+   como indican "Plantilla de PDF" y "Generar un PDF" en "Referencia rápida":
+   - Lee `TEMPLATE.md` completo (apartado "Resumen de avance") y comprueba la copia de
+     `reports/_template/` (cópiala o reemplázala si falta o su versión es menor).
+   - Copia `reports/_template/summary.html` como
+     `reports/_summaries/summary-<AAAA-MM-DD>.html` y sustituye sus campos, con
+     `{{CSS_HREF}}` = `../_template/finding.css`. Usa el mismo CSS y el mismo
+     encabezado que los PDF de solución: sin estilos propios, solo las clases de
+     `finding.css` y los componentes del catálogo. No cambies el orden ni el título de
+     sus ocho secciones; una sección sin datos lleva la línea "Sin hallazgos en el
+     periodo." en lugar de quitarse.
+   - Los identificadores (módulos, elementos) van en `<code>`. Sin ID internos y sin
+     valores de secretos ni datos personales, igual que en el `.md`.
+   - Imprime con Edge o Chrome por su ruta completa, con el mismo comando que los PDF
+     de solución.
+   - Lee el PDF y comprueba que existe y es de esta ejecución, que tiene las ocho
+     secciones y que el texto se puede extraer. Si algo falla, corrige el `.html` e
+     imprime de nuevo.
+
+   Si no hay Edge ni Chrome, o la impresión falla, deja el `.md` y el `.html`, avisa
+   que el PDF queda pendiente y pregunta cómo seguir.
 5. Muestra el resumen en pantalla.
 
 Las cifras salen del archivo de progreso, no de estimaciones. Si el porcentaje de AI

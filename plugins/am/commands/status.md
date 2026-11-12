@@ -57,10 +57,22 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> > <Object Name>`. No lleva el ID.
-- **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
-  si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
-  de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
-  instalar la librería, nunca el lenguaje. Sin Python ni Node, el PDF queda pendiente:
-  avisa y pregunta cómo seguir.
+  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
+  está en la misma carpeta.
+- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
+  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
+  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
+  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
+  `reports/_template/` si no están o si su versión (primer comentario de
+  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
+- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
+  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
+  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
+  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
+  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
+  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
+  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
+  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
+  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
+  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.

@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.3.3-2563eb)
+![versión](https://img.shields.io/badge/versión-0.4.0-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -23,7 +23,7 @@ AI Mentor exporta un Excel con los hallazgos de deuda técnica. `am` lo recorre 
 
 - lee el elemento afectado en OutSystems y encuentra la causa concreta;
 - escribe una **guía `.md`** con los pasos exactos para corregirlo a mano en Service Studio;
-- genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad;
+- genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad, siempre con la misma plantilla;
 - incluye siempre la alternativa de menor cambio, y te avisa cuando la solución cambia el comportamiento de la aplicación (**Requiere decisión funcional**);
 - separa lo que encuentra de otra categoría (seguridad, datos, bugs) como observaciones fuera del alcance, para que lo reportes aparte;
 - te sugiere qué estado darle en AI Mentor (Open, Already fixed, False positive, Won't fix o Remind me later), con una justificación;
@@ -51,10 +51,10 @@ Para traer una versión nueva:
 | Necesitas | Para qué |
 |---|---|
 | Claude Code con una conexión a OutSystems | Leer módulos, pantallas, acciones y aggregates |
-| Python 3 **o** Node.js | Generar los PDF (el plugin usa el que encuentre) |
+| Microsoft Edge **o** Google Chrome | Imprimir los PDF (en Windows, Edge ya viene instalado) |
 | El Excel "Code Quality Report" de AI Mentor | Lista de hallazgos a trabajar |
 
-> Sin Python ni Node, el plugin genera las guías `.md` y deja el PDF pendiente; nunca instala un lenguaje por su cuenta.
+> Sin Edge ni Chrome, el plugin genera las guías `.md` y el `solution.html`, deja el PDF pendiente y no cierra el hallazgo; nunca instala nada por su cuenta.
 
 ## Inicio rápido
 
@@ -127,16 +127,16 @@ Todo queda en la carpeta donde ejecutas Claude Code:
 ```
 reports/
 ├── _progress.md                  avance de todos los hallazgos
-├── _summaries/                   summary-<fecha>.md y .pdf de /am:summary
+├── _template/                    copia de la plantilla de PDF (no la edites)
+├── _summaries/                   summary-<fecha>.md, .html y .pdf de /am:summary
 ├── _archive/<fecha>/             lo que movió /am:clean
 └── <Module>/
     └── <ID>-<Object Name>/
         ├── solution.md                                  guía para corregirlo a mano
+        ├── solution.html                                documento del que se imprime el PDF
         ├── <Module>-<Parent>-<Object Name>-<Prefix>.pdf documento formal
         ├── implementation.md                            solo si usaste /am:fix
         └── evidence/                                    tus pantallazos
-scripts/
-└── generate_pdf.py | .mjs        se crea una vez y se reutiliza
 ```
 
 Los nombres de archivos y carpetas van en inglés; el contenido de los documentos, en español. El PDF lleva el elemento padre del `Object Path` (la pantalla o el flujo que contiene al objeto) y se llama, por ejemplo, `Ventas-PedidoDetalle-ValidarPedido-SRC.pdf`: se limpian los caracteres no válidos y, si dos nombres chocan, se agrega un sufijo numérico. Si el objeto no tiene padre distinto del módulo, el nombre queda `<Module>-<Object Name>-<Prefix>.pdf`.
@@ -153,16 +153,18 @@ Además de los pasos manuales, la guía trae:
 
 ### El PDF de solución
 
-El título es `<Parent> > <Object Name>` (por ejemplo, "PedidoDetalle > ValidarPedido"), en la fuente normal de los títulos. En el resto del documento, los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea. Siempre con estas seis secciones:
+Todos los PDF salen de una plantilla fija que viene con el plugin (`finding.html` y `finding.css`), así que son iguales en todos los proyectos. El plugin la copia a `reports/_template/`, escribe `solution.html` en la carpeta del hallazgo y lo imprime con Edge o Chrome en modo headless; si una versión nueva del plugin trae una plantilla más reciente, reemplaza la copia. No hay script que mantener ni dependencias que instalar. Tampoco hay marca, logo ni archivo de configuración por proyecto: el color, el encabezado y el pie son fijos. Después de imprimir, el plugin comprueba que el PDF existe, que tiene las seis secciones, que las imágenes cargaron y que el texto se puede extraer.
 
-1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path y Fecha de análisis, con esas etiquetas y en ese orden)
+El título es `<Parent> › <Object Name>` (por ejemplo, "PedidoDetalle › ValidarPedido"), en la fuente normal de los títulos. Bajo el título, una ficha resume categoría, patrón, fecha de análisis y estado. En el resto del documento, los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea; los muy largos solo se parten en sus separadores (`>`, `/`, `.`). Siempre con estas seis secciones:
+
+1. Identificación del hallazgo (App, Módulo, Objeto con su tipo y Ruta del objeto)
 2. Módulo afectado
-3. Descripción de la causa identificada
+3. Causa identificada
 4. Solución aplicada
 5. Evidencia de corrección
 6. Estado final de la atención
 
-Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. Si la solución cambia el comportamiento, la sección 4 lleva un apartado "Cambio de comportamiento". `/am:close` genera la versión final; si el hallazgo pasó por `/am:fix` y se cierra sin `Fixed`, la sección 6 indica si ese cambio fue revertido o sigue en OutSystems. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
+Mientras el hallazgo está en `draft`, el PDF sale marcado como **Borrador**: la sección 4 se titula "Solución propuesta" e incluye las alternativas consideradas, la 5 muestra los marcos vacíos de las capturas previstas y la 6 queda como "Pendiente de implementación". Si la solución cambia el comportamiento, la sección 4 lleva un recuadro "Cambio de comportamiento". `/am:close` genera la versión final; si el hallazgo pasó por `/am:fix` y se cierra sin `Fixed`, la sección 6 indica si ese cambio fue revertido o sigue en OutSystems. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
 
 ### Identificadores
 

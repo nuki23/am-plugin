@@ -12,8 +12,8 @@ OutSystems es solo lectura: consulta, no publiques ni edites. Nunca cambies el e
 del hallazgo en AI Mentor.
 
 Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
-dato personal; solo el nombre y la ruta del elemento. El ID es interno: no va en el PDF
-ni en `solution.md`.
+dato personal; solo el nombre y la ruta del elemento. El ID es interno: no va en el
+PDF, en `solution.html` ni en `solution.md`.
 
 ## Referencia rápida
 
@@ -40,12 +40,24 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> > <Object Name>`. No lleva el ID.
-- **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
-  si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
-  de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
-  instalar la librería, nunca el lenguaje. Sin Python ni Node, el PDF queda pendiente:
-  avisa y pregunta cómo seguir.
+  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
+  está en la misma carpeta.
+- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
+  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
+  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
+  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
+  `reports/_template/` si no están o si su versión (primer comentario de
+  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
+- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
+  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
+  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
+  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
+  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
+  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
+  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
+  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
+  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
+  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
 
 ## Pasos
@@ -118,20 +130,47 @@ completa es `/am:review`.
    - **Identificadores:** clases CSS, nombres de acciones y demás elementos, y rutas,
      van entre comillas invertidas; el PDF los muestra en fuente monoespaciada y sin
      partirlos al final de la línea.
-6. Estado al terminar. Regenera el PDF de solución (tipo `finding`), reutilizando el
-   nombre del `.pdf` que ya está en la carpeta; si no hay Python ni Node, avisa que el
-   PDF queda pendiente y pregunta cómo seguir. El PDF sigue el formato de `/am:review`:
-   título `<Parent> > <Object Name>` en fuente normal (no monoespaciada), las ocho etiquetas de la sección 1 (App, Module,
-   Category, Pattern Name, Object Name, Object Type, Object Path, Fecha de análisis),
-   el apartado "Cambio de comportamiento" en la sección 4 si existe en `solution.md`,
-   una sola línea al final de la sección 3 si hay observaciones fuera del alcance
-   ("Durante el análisis se identificaron observaciones fuera del alcance de este
-   hallazgo; se reportan por separado."), los identificadores en monoespaciada y sin
-   partirse, y ninguna sección sola en la última página. Esa línea solo va en pasado
-   ("se reportaron por separado") en un PDF final cuya sección `## Cierre` registra
-   que el usuario confirmó que ya las reportó; si quitas `## Cierre`, vuelve al
-   presente. El PDF nunca afirma algo con más certeza que `solution.md`: si allí dice
-   "No verificado" o "probable", el PDF usa la misma cautela.
+6. Estado al terminar. Regenera `solution.html` y el PDF de solución como indica
+   "Generar un PDF" en "Referencia rápida":
+   - Lee `TEMPLATE.md` completo y comprueba la copia de `reports/_template/` (cópiala o
+     reemplázala si falta o su versión es menor).
+   - Escribe `solution.html` de nuevo a partir de `reports/_template/finding.html`,
+     aunque ya exista: no edites el anterior. Sin estilos propios, solo los campos y
+     los componentes del catálogo.
+   - Imprime con Edge o Chrome reutilizando el nombre del `.pdf` que ya está en la
+     carpeta. Si el hallazgo no tenía PDF, usa el nombre de la regla de "PDF de
+     solución".
+   - Comprueba el resultado: el PDF existe y es de esta ejecución, tiene las seis
+     secciones, las imágenes cargaron y el texto se puede extraer.
+   - Si no hay Edge ni Chrome, o la impresión falla, deja `solution.html`, avisa que
+     el PDF queda pendiente y pregunta cómo seguir.
+
+   El contenido sigue el formato de `/am:review`:
+   - Título `<Parent> › <Object Name>`, en la fuente normal de los títulos.
+   - Sección 1 con sus cuatro filas (App, Módulo, Objeto con su tipo y Ruta del
+     objeto); categoría, patrón y fecha de análisis van en la ficha del encabezado y
+     no se repiten en la tabla. Si no se conoce el tipo de un tramo de la ruta, se
+     omite.
+   - Sección 3, "Causa identificada": si hay observaciones fuera del alcance, termina
+     con una sola línea en una nota (`note`): "Durante el análisis se identificaron
+     observaciones fuera del alcance de este hallazgo; se reportan por separado." Esa
+     línea solo va en pasado ("se reportaron por separado") en un PDF final cuya
+     sección `## Cierre` registra que el usuario confirmó que ya las reportó; si
+     quitas `## Cierre`, vuelve al presente.
+   - Sección 4: el recuadro "Cambio de comportamiento · Requiere decisión funcional"
+     si el apartado existe en `solution.md`.
+   - Identificadores en `<code>`, cada uno en el suyo; los largos, con
+     `<code class="wrap">` y `<wbr>` después de cada separador, para que no se partan
+     dentro de un nombre.
+   - Lo que cambia según el estado (etiqueta, título de la sección 4, evidencia,
+     estado final) sale de la tabla "Qué cambia según el estado" de `TEMPLATE.md`:
+     columna "Borrador" si queda `draft` o `implemented`; la del estado final si
+     sigue `closed`.
+   - El PDF nunca afirma algo con más certeza que `solution.md`: si allí dice "No
+     verificado" o "probable", el PDF usa la misma cautela. Sin el ID y sin valores de
+     secretos ni datos personales.
+
+   Según lo que cambió:
    - **Si la solución cambió, queda `draft`**: PDF en modo borrador, vacía
      `Final status` y quita la sección `## Cierre` de `solution.md` si existía. Si
      estaba `implemented`, además avisa claramente que lo implementado en OutSystems ya
@@ -144,7 +183,7 @@ completa es `/am:review`.
 7. Si el estado cambió, actualiza la fila en `_progress.md`: `Doc status`,
    `Final status` si corresponde, y `Updated` = hoy.
 8. Resume qué cambió respecto a la versión anterior, el estado sugerido en AI Mentor y
-   en qué estado quedó el hallazgo. Destaca, cuando aplique, **Requiere consulta**
+   en qué estado quedó el hallazgo. Si el PDF quedó pendiente, dilo. Destaca, cuando aplique, **Requiere consulta**
    (con esas palabras y cuántos puntos), **Requiere decisión
    funcional** (qué comportamiento cambia y cuál es la alternativa mínima), los
    **Hallazgos relacionados** (en el chat sí con su ID, y si conviene corregirlos

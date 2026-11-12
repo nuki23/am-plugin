@@ -9,6 +9,8 @@ sobre aplicaciones OutSystems. Repo público: github.com/nuki23/am-plugin.
 .claude-plugin/marketplace.json     marketplace "nuki23" (owner "nuki23")
 plugins/am/.claude-plugin/plugin.json   plugin "am" + versión (author "nuki23")
 plugins/am/commands/<nombre>.md     un archivo por comando → /am:<nombre>
+plugins/am/templates/               plantilla fija de PDF: TEMPLATE.md, finding.css,
+                                    finding.html, summary.html
 README.md
 ```
 
@@ -17,31 +19,48 @@ README.md
   actualizar `marketplace.json`, `plugin.json` y el README a la vez.
 - Comandos actuales (siete): `review`, `close`, `fix`, `redo`, `status`, `summary`,
   `clean`. `fix` y `clean` llevan `disable-model-invocation: true`.
-- **Idioma:** nombres internos (archivos, carpetas, columnas, estados, tipos de PDF) en
-  inglés; contenido de los documentos y textos de los comandos, en español. Los
-  encabezados dentro de `solution.md` (`## Cierre`, `## Pospuesto`) son contenido.
+- **Idioma:** nombres internos (archivos, carpetas, columnas, estados) en inglés;
+  contenido de los documentos y textos de los comandos, en español. Los encabezados
+  dentro de `solution.md` (`## Cierre`, `## Pospuesto`) son contenido, igual que los
+  campos (`{{TITULO}}`) y las etiquetas de la plantilla de PDF.
 - Salida que generan los comandos (en el proyecto del usuario, nunca en este repo):
   - `reports/_progress.md`
-  - `reports/_summaries/summary-AAAA-MM-DD.md` y `.pdf`
+  - `reports/_template/` (copia de `finding.css`, `finding.html` y `summary.html`;
+    nunca se edita)
+  - `reports/_summaries/summary-AAAA-MM-DD.md`, `.html` y `.pdf`
   - `reports/_archive/<AAAA-MM-DD>/` (solo `/am:clean`; los demás comandos lo ignoran)
-  - `reports/<Module>/<ID>-<Object Name>/` con `solution.md`,
+  - `reports/<Module>/<ID>-<Object Name>/` con `solution.md`, `solution.html`,
     `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, `implementation.md` (solo si pasó
     por `/am:fix`) y `evidence/`.
 - **Nombres de archivo** (regla de referencia en `commands/review.md`): se limpian
   espacios y `\ / : * ? " < > |`; el PDF es único en `reports/` (sufijo `-2`, `-3` si
   choca) y redo/close reutilizan el nombre existente al regenerarlo. `<Parent>` es el
   segmento anterior al último de `Object Path`; se omite si no hay o es el módulo. El
-  título del PDF es `<Parent> > <Object Name>`.
+  título del PDF es `<Parent> › <Object Name>`.
 - **ID interno** (`SRC-001`): solo en `_progress.md`, en el nombre de la carpeta y en el
-  chat. Nunca en `solution.md`, `implementation.md` ni en ningún PDF.
-- **PDF:** la regla de referencia es la sección "Generación de PDF" de
-  `commands/review.md`; redo, close y summary la referencian. El plugin no asume
-  Python: reutiliza un script existente (`scripts/generate_pdf.py` o
-  `scripts/generate_pdf.mjs`); si no hay, detecta Python 3 (reportlab) o Node (pdfkit)
-  y crea el script. Puede instalar la librería, nunca el lenguaje. Sin ninguno, se
-  generan los `.md`, el PDF queda pendiente y se pregunta al usuario. El script soporta
-  dos tipos: `finding` (seis secciones, modo borrador o final; review, redo, close) y
-  `summary` (summary).
+  chat. Nunca en `solution.md`, `solution.html`, `implementation.md` ni en ningún PDF.
+- **PDF:** todos salen de la plantilla fija de `plugins/am/templates/`, para que sean
+  iguales en todos los proyectos. La regla de referencia es la sección "Generación de
+  PDF" de `commands/review.md` más `templates/TEMPLATE.md` (campos, tabla de estados,
+  catálogo de componentes y comando de impresión); redo, close y summary las
+  referencian.
+  - **Cómo llega al proyecto:** los comandos leen la plantilla en
+    `${CLAUDE_PLUGIN_ROOT}/templates/` (Claude Code sustituye la variable en el
+    cuerpo del comando; no existe como variable de entorno en Bash) y copian
+    `finding.css`, `finding.html` y `summary.html` a `reports/_template/`. Si la ruta
+    no resuelve, buscan en `~/.claude/plugins/cache/nuki23/am/<versión>/templates/`;
+    si tampoco está, se detienen. `TEMPLATE.md` se lee del plugin, no se copia.
+  - **Versión de la plantilla:** el número del primer comentario de `finding.css`
+    ("versión N"); `finding.html` y `summary.html` llevan el mismo. Si la copia del
+    proyecto falta o es anterior, se reemplaza. Al cambiar cualquier archivo de la
+    plantilla ya publicada, subir ese número en los tres.
+  - **Generación:** review, redo y close escriben `solution.html` desde
+    `finding.html`; summary escribe `summary-AAAA-MM-DD.html` desde `summary.html`.
+    Se imprime con Edge o Chrome en modo headless, por su ruta completa (en Windows:
+    Edge en `Program Files`, luego en `Program Files (x86)`, luego Chrome).
+  - **Sin script ni dependencias:** no hay script de PDF ni se instala nada. Sin
+    navegador, o si la impresión falla, queda el `.html`, se avisa y el hallazgo no
+    se marca `closed`.
 
 ## Formato de `_progress.md`
 
@@ -147,31 +166,52 @@ un resumen (bloque "Referencia rápida").
   (hoy: los siete) y en el README (tabla y diagrama).
 - **Bloque "Referencia rápida" sincronizado:** close, redo, fix, clean, status y
   summary llevan un bloque idéntico (columnas de `_progress.md`, valores de
-  `Doc status` y `Final status`, nombres de carpeta y PDF, script de PDF) para no
+  `Doc status` y `Final status`, nombres de carpeta y PDF, plantilla y generación del
+  PDF) para no
   depender de leer `review.md`, que sigue siendo la referencia completa. Si cambia algo
   de eso, se actualiza `review.md` y el bloque en los seis, y se comprueba que sigue
   idéntico.
-- **close no deja cierres a medias:** comprueba que se puede generar el PDF antes de
-  escribir `## Cierre`.
-- **PDF de solución, siempre seis secciones:**
-  1. Identificación del hallazgo: ocho etiquetas fijas, en este orden y sin traducir
-     (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path,
-     Fecha de análisis; sin ID)
+- **close no deja cierres a medias:** escribe `solution.html`, imprime y comprueba el
+  PDF antes de escribir `## Cierre` y de marcar `closed`. Si el PDF no sale, queda
+  `solution.html` y el hallazgo sigue como estaba.
+- **PDF de solución, siempre seis secciones**, con el orden y los títulos de
+  `templates/finding.html`:
+  1. Identificación del hallazgo: cuatro filas fijas, en este orden (App, Módulo,
+     Objeto con su tipo, Ruta del objeto; sin ID). Categoría, patrón, fecha de
+     análisis y estado van en la ficha de resumen del encabezado y no se repiten en
+     la tabla. Si no se conoce el tipo de un tramo de la ruta, se omite. `solution.md`
+     conserva sus ocho etiquetas en inglés.
   2. Módulo afectado
-  3. Descripción de la causa identificada (si hay observaciones fuera del alcance,
-     termina con una sola línea que dice que se reportan por separado, sin detalle;
-     en pasado solo en el PDF final y si el usuario confirmó en close que ya las
-     reportó, lo que queda anotado en `## Cierre`)
-  4. Solución aplicada ("Solución propuesta" mientras es borrador; con el apartado
+  3. Causa identificada (si hay observaciones fuera del alcance, termina con una sola
+     línea que dice que se reportan por separado, sin detalle; en pasado solo en el
+     PDF final y si el usuario confirmó en close que ya las reportó, lo que queda
+     anotado en `## Cierre`)
+  4. Solución aplicada ("Solución propuesta" mientras es borrador; con el recuadro
      "Cambio de comportamiento" si `solution.md` lo tiene)
   5. Evidencia de corrección
   6. Estado final de la atención (si el hallazgo estaba `implemented` y se cierra sin
-     `Fixed`, lleva una línea con el estado del cambio hecho por `/am:fix`: revertido,
+     `Fixed`, lleva una fila con el estado del cambio hecho por `/am:fix`: revertido,
      solo con confirmación del usuario, o sigue en OutSystems)
 
-  El script no deja una sección sola en la última página ni separa un título de su
-  contenido. Los identificadores van en fuente monoespaciada y no se parten al final
-  de la línea; el título del documento va en la fuente normal de los títulos.
+  Lo que cambia según el estado (borrador, Fixed, Already fixed, False positive,
+  Won't fix) está en la tabla "Qué cambia según el estado" de `TEMPLATE.md`; review,
+  redo y close la aplican tal cual. Los saltos de página los resuelve `finding.css`.
+  Los identificadores van en `<code>` y no se parten al final de la línea; los largos
+  llevan `<code class="wrap">` y `<wbr>` después de cada separador, así que solo se
+  parten en un separador y nunca dentro de un nombre (salvo un nombre que por sí solo
+  no cabe en el renglón). El título del documento va en la fuente normal de los
+  títulos.
+- **Plantilla fija, sin estilos propios:** `solution.html` y el `.html` del resumen
+  solo llevan los campos del esqueleto y los componentes del catálogo de
+  `TEMPLATE.md`: nada de `style="..."`, clases nuevas ni otro `<style>`. Sin marca ni
+  logo: el color, el encabezado y el pie están fijos en `finding.css`. No hay archivo
+  de configuración por proyecto y no se agrega ninguno. Los comandos nunca editan la
+  copia de `reports/_template/`; `finding.css` solo cambia en este repo, por decisión
+  del usuario y subiendo la versión de la plantilla.
+- **Verificación del PDF:** después de imprimir, todo comando comprueba que el PDF
+  existe y es de esa ejecución, que tiene todas sus secciones, que las imágenes
+  cargaron y que el texto se puede extraer. El resultado se comprueba en el archivo,
+  no en la salida del navegador.
 - **El PDF nunca afirma más que `solution.md`:** si la guía dice "No verificado" o
   "probable", el PDF usa la misma cautela (review, redo, close). "Consultar antes de
   implementar" y "Hallazgos relacionados" no van en el PDF.
@@ -196,6 +236,9 @@ un resumen (bloque "Referencia rápida").
 5. Validar que `marketplace.json` y `plugin.json` siguen siendo JSON válido, y que el
    diagrama Mermaid del README sigue siendo válido (los `:` dentro de una etiqueta se
    escriben `#58;`).
+   Si cambia algo de `plugins/am/templates/`, imprimir un PDF de prueba con datos
+   genéricos fuera del repo (borrador, final y resumen) y revisarlo; `finding.css` no
+   se toca sin consultarlo antes con el usuario.
 6. Mostrar el diff resumido.
 7. **Nunca ejecutar `git commit` ni `git push`, ni siquiera si el usuario lo pide.** El
    usuario hace los commits. Al terminar cada cambio, proponer un mensaje en formato

@@ -1,0 +1,205 @@
+/* am · plantilla del PDF de solución · versión 1
+   Archivo fijo: los comandos no lo modifican ni generan estilos propios. */
+
+:root {
+  --accent: #FF5249;
+  --accent-text: color-mix(in srgb, var(--accent) 70%, #000);  /* acento legible en texto pequeño */
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #fff);  /* solo para fondos */
+  --negro: #000000;
+  --blanco: #FFFFFF;
+  --g-900: #1A1A1A;
+  --g-700: #4D4D4D;
+  --g-500: #6E6E6E;
+  --g-200: #E6E6E6;
+  --g-100: #F5F5F5;
+  --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --mono: Consolas, "DejaVu Sans Mono", Menlo, monospace;
+}
+
+@page {
+  size: A4;
+  margin: 22mm 18mm 20mm 18mm;
+  @top-left {
+    content: "AI Mentor · Atención de hallazgo";
+    font: 500 7.5pt "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #6E6E6E;
+    letter-spacing: .04em; text-transform: uppercase;
+    vertical-align: bottom; padding-bottom: 4mm;
+  }
+  @top-right {
+    content: "";
+    font: 600 7.5pt "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #000;
+    vertical-align: bottom; padding-bottom: 4mm;
+  }
+  @bottom-left {
+    content: "Confidencial — uso interno";
+    font: 400 7.5pt "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #6E6E6E;
+    vertical-align: top; padding-top: 4mm;
+  }
+  @bottom-right {
+    content: "Página " counter(page) " de " counter(pages);
+    font: 500 7.5pt "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #4D4D4D;
+    vertical-align: top; padding-top: 4mm;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: var(--sans); font-size: 9.2pt; line-height: 1.5; color: var(--g-900); }
+code, .mono {
+  font-family: var(--mono); font-size: .9em; color: var(--negro);
+  background: var(--g-100); padding: .05em .35em; border-radius: 3px;
+  white-space: nowrap;
+}
+code.wrap { white-space: normal; overflow-wrap: anywhere; }
+
+/* ===== Encabezado ===== */
+.cover { border-top: 4px solid var(--accent); padding-top: 6mm; margin-bottom: 4mm; }
+.cover-top { display: flex; justify-content: space-between; align-items: center; gap: 6mm; margin-bottom: 2.5mm; }
+.state-label {
+  font-size: 7pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent-text); border: 1px solid var(--accent-text);
+  padding: 1.2mm 2.6mm; border-radius: 2px; white-space: nowrap;
+}
+.eyebrow { font-size: 8pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); }
+h1 { font-size: 20pt; line-height: 1.2; font-weight: 700; letter-spacing: -.02em; color: var(--negro); overflow-wrap: anywhere; }
+h1 .sep { color: var(--accent); font-weight: 400; padding: 0 .15em; }
+
+/* Franja de resumen */
+.summary {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--g-200); border-radius: 4px; margin-top: 6mm;
+}
+.summary > div { padding: 3mm 4mm; border-left: 1px solid var(--g-200); }
+.summary > div:first-child { border-left: 0; }
+.summary .k { font-size: 7pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); }
+.summary .v { font-size: 10pt; font-weight: 600; color: var(--negro); margin-top: .5mm; }
+.summary .v.small { font-size: 8.5pt; }
+
+.badge {
+  display: inline-block; font-size: 7.5pt; font-weight: 600; line-height: 1;
+  padding: 1.3mm 2.4mm; border-radius: 10mm; white-space: nowrap;
+}
+.badge-soft { background: var(--accent-soft); color: var(--accent-text); }   /* pendiente */
+.badge-dark { background: var(--negro); color: var(--blanco); }              /* estado final */
+.badge-line { border: 1px solid var(--g-700); color: var(--g-900); }         /* categoría */
+
+/* ===== Secciones ===== */
+section { margin-top: 6mm; }
+h2 {
+  display: flex; align-items: baseline; gap: 3mm;
+  font-size: 12pt; font-weight: 700; color: var(--negro);
+  padding-bottom: 2mm; border-bottom: 1px solid var(--g-200); margin-bottom: 3.5mm;
+  break-after: avoid;
+}
+h2 .num { color: var(--accent-text); font-weight: 700; font-size: 10pt; min-width: 6mm; }
+h3 { font-size: 8pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g-700); margin: 5mm 0 2mm; break-after: avoid; }
+p + p { margin-top: 2.5mm; }
+strong { font-weight: 600; color: var(--negro); }
+.muted { color: var(--g-500); }
+.keep { break-inside: avoid; }
+
+/* Tabla clave-valor (identificación y estado final) */
+table.kv { width: 100%; border-collapse: collapse; }
+table.kv th, table.kv td { text-align: left; vertical-align: top; padding: 1.7mm 0; border-bottom: 1px solid var(--g-100); }
+table.kv th { width: 34mm; font-size: 8pt; font-weight: 500; color: var(--g-500); padding-right: 4mm; }
+table.kv td { font-weight: 500; color: var(--negro); }
+table.kv tr:last-child th, table.kv tr:last-child td { border-bottom: 0; }
+table.kv .t { font-weight: 400; color: var(--g-500); margin-left: 1.5mm; }
+
+/* Ruta del objeto */
+.path { list-style: none; }
+.path li { position: relative; padding-left: 5mm; line-height: 1.5; }
+.path li + li { margin-top: .4mm; }
+.path li::before {
+  content: ""; position: absolute; left: 0; top: .55em;
+  width: 1.6mm; height: 1.6mm; border-radius: 50%; border: 1px solid var(--g-500); background: var(--blanco);
+}
+.path li:not(:last-child)::after {
+  content: ""; position: absolute; left: .75mm; top: 1.15em; bottom: -1.3em; border-left: 1px solid var(--g-200);
+}
+.path li:last-child::before { background: var(--accent); border-color: var(--accent); }
+.path li:last-child { font-weight: 700; }
+.path .t { font-weight: 400; color: var(--g-500); font-size: 8pt; margin-left: 1.5mm; }
+
+/* Diagrama de secuencia (opcional) */
+.flow { display: flex; align-items: stretch; gap: 0; margin: 4mm 0 1mm; break-inside: avoid; }
+.flow .node {
+  flex: 1; border: 1px solid var(--g-200); border-radius: 4px; padding: 2.8mm 3mm;
+  font-size: 8pt; line-height: 1.35; background: var(--blanco);
+}
+.flow .node .lbl { font-size: 6.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); margin-bottom: 1mm; }
+.flow .node .name { font-weight: 600; color: var(--negro); word-break: break-word; }
+.flow .node.hit { border-color: var(--accent); }
+.flow .node.hit .lbl { color: var(--accent-text); }
+.flow .arrow { width: 7mm; display: flex; align-items: center; justify-content: center; color: var(--g-500); font-size: 10pt; }
+.caption { font-size: 7.5pt; color: var(--g-500); }
+.flow + .caption { margin-bottom: 3mm; }
+
+/* Recuadros */
+.callout {
+  border-left: 3px solid var(--accent); background: var(--accent-soft);
+  padding: 3mm 4mm; border-radius: 0 4px 4px 0; margin-top: 4mm; break-inside: avoid;
+}
+.callout .ttl { font-size: 7.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 1mm; }
+.note {
+  border: 1px solid var(--g-200); background: var(--g-100);
+  padding: 3mm 4mm; border-radius: 4px; margin-top: 4mm; font-size: 8.5pt; color: var(--g-700); break-inside: avoid;
+}
+
+/* Pasos */
+ol.steps { list-style: none; counter-reset: s; }
+ol.steps > li {
+  counter-increment: s; position: relative; padding: 2mm 0 2mm 10mm;
+  border-bottom: 1px solid var(--g-100); break-inside: avoid;
+}
+ol.steps > li:last-child { border-bottom: 0; }
+ol.steps > li::before {
+  content: counter(s); position: absolute; left: 0; top: 1.8mm;
+  width: 5.5mm; height: 5.5mm; border-radius: 50%;
+  background: var(--negro); color: var(--blanco);
+  font-size: 7.5pt; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+ol.steps ul { margin: 1.2mm 0 0 0; list-style: none; }
+ol.steps ul li { padding: .3mm 0; }
+
+/* Tabla de alternativas */
+table.alt { width: 100%; border-collapse: collapse; font-size: 8.5pt; break-inside: avoid; }
+table.alt th { text-align: left; font-size: 7pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g-700); padding: 1.5mm 3mm 1.5mm 0; border-bottom: 1px solid var(--negro); }
+table.alt td { vertical-align: top; padding: 1.7mm 3mm 1.7mm 0; border-bottom: 1px solid var(--g-100); }
+table.alt th:last-child, table.alt td:last-child { padding-right: 0; }
+
+/* Evidencia */
+.page-break { break-before: page; }
+.ev-meta { display: flex; gap: 6mm; font-size: 8pt; color: var(--g-500); margin-bottom: 4mm; }
+.ev-meta b { color: var(--negro); font-weight: 600; }
+.ev-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 6mm; }
+figure { break-inside: avoid; }
+figure.ev-full { margin-bottom: 6mm; }
+figure .tag {
+  display: inline-block; font-size: 6.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  padding: .8mm 2mm; border-radius: 2px; margin-bottom: 1.5mm;
+}
+figure .tag.antes   { background: var(--g-100); color: var(--g-700); }
+figure .tag.despues { background: var(--accent); color: var(--negro); }
+figure .frame { border: 1px solid var(--g-200); border-radius: 4px; overflow: hidden; background: var(--blanco); }
+figure .frame img { display: block; width: 100%; height: auto; }
+.ev-pair .frame img { max-height: 62mm; object-fit: contain; }
+.ev-full .frame img { max-height: 110mm; object-fit: contain; }
+figure .frame.empty {
+  border-style: dashed; border-color: var(--g-500); background: var(--g-100);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--g-500); font-size: 8pt; text-align: center; padding: 0 6mm;
+}
+.ev-pair .frame.empty { height: 62mm; }
+.ev-full .frame.empty { height: 75mm; }
+figcaption { font-size: 7.5pt; color: var(--g-700); margin-top: 1.5mm; line-height: 1.4; }
+figcaption b { color: var(--negro); font-weight: 600; }
+
+/* Estado final */
+.status-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 6mm;
+  border: 1px solid var(--g-200); border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0; padding: 3.5mm 4mm; break-inside: avoid;
+}
+.status-row p { font-size: 8.5pt; color: var(--g-700); }
+.status-detail { margin-top: 3mm; break-inside: avoid; }
