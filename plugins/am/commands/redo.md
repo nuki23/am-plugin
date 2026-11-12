@@ -15,8 +15,38 @@ Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial,
 dato personal; solo el nombre y la ruta del elemento. El ID es interno: no va en el PDF
 ni en `solution.md`.
 
-Formato de `reports/_progress.md`, nombres de archivo y generación de PDF: como los
-define `/am:review`.
+## Referencia rápida
+
+Este bloque es idéntico en close, redo, fix, clean, status y summary; la referencia
+completa es `/am:review`.
+
+- **`reports/_progress.md`** tiene dos tablas:
+  - `Prefixes`: `Prefix | Pattern Name | Last`. `Last` es el último consecutivo
+    asignado a ese prefijo; solo `/am:review` lo sube y ningún comando lo reduce.
+  - `Findings`: `ID | Module | Pattern | Element | Object Path | Doc status |
+    Final status | Updated | Folder`. Las filas van en el orden de trabajo: el primer
+    `pending` es el siguiente.
+- **`Doc status`:** `pending`, `draft`, `implemented`, `closed` o `skipped`.
+- **`Final status`:** en `closed`, `Fixed`, `Already fixed`, `False positive` o
+  `Won't fix`; en `skipped`, el motivo de AI Mentor (`Snooze Reason Label`), que nunca
+  cuenta como cierre; vacío en los demás.
+- **`Updated`:** `AAAA-MM-DD` del último cambio de `Doc status`; la actualiza todo
+  comando que cambie el estado.
+- **Carpeta del hallazgo:** `reports/<Module>/<ID>-<Object Name>/` (columna `Folder`,
+  relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
+  por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
+  final.
+- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
+  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
+  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
+  si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
+  de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
+  instalar la librería, nunca el lenguaje. Sin Python ni Node, el PDF queda pendiente:
+  avisa y pregunta cómo seguir.
+- `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
+
+## Pasos
 
 1. Ubica la carpeta del hallazgo en `_progress.md`. Si el ID no existe, dilo y
    detente. Si está `pending` o `skipped`, no hay análisis que rehacer: indica que se
@@ -27,10 +57,24 @@ define `/am:review`.
    corregir la redacción y conservar evidencia y estado final.
 4. Vuelve a leer en OutSystems los elementos involucrados; no reutilices conclusiones
    del análisis anterior sin verificarlas.
-5. Reescribe `solution.md` con la misma estructura que usa `/am:review`, incluido el
-   "Estado sugerido en AI Mentor" reevaluado (con la misma regla: nunca `False
-   positive` ni `Won't fix` sin explicar qué se verificó). Conserva la sección
-   `## Pospuesto` si existía. No toques la carpeta `evidence/`.
+5. Reescribe `solution.md` con estas secciones, en este orden y sin el ID:
+   - Identificación (App, Module, Category, Pattern Name, Object Name, Object Type,
+     Object Path y fecha de análisis)
+   - Estado sugerido en AI Mentor, con su justificación de una línea
+   - Resumen del hallazgo
+   - Dónde está
+   - Por qué AI Mentor lo marca
+   - Cómo se llegó a la solución
+   - Pasos manuales
+   - Alternativas consideradas
+   - Impacto y qué probar después
+   - Cómo verificar en AI Mentor
+   - Qué pantallazos tomar para la evidencia
+   - Puntos no verificados, si los hay
+
+   Reevalúa el "Estado sugerido en AI Mentor" (nunca `False positive` ni `Won't fix`
+   sin explicar qué se verificó). Conserva la sección `## Pospuesto` si existía. No
+   toques la carpeta `evidence/`.
 6. Estado al terminar. Regenera el PDF de solución (tipo `finding`), reutilizando el
    nombre del `.pdf` que ya está en la carpeta; si no hay Python ni Node, avisa que el
    PDF queda pendiente y pregunta cómo seguir.

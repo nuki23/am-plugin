@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.3.0-2563eb)
+![versión](https://img.shields.io/badge/versión-0.3.1-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -116,6 +116,8 @@ stateDiagram-v2
 
 `/am:clean all` archiva todo, sin importar el estado, para empezar con un Excel nuevo.
 
+> Después de `/am:clean pending` o `/am:clean drafts`, si vuelves a cargar un Excel donde esos hallazgos sigan en `Open`, reaparecen como `pending`, con un ID nuevo.
+
 ## Qué genera
 
 Todo queda en la carpeta donde ejecutas Claude Code:
@@ -148,7 +150,7 @@ Siempre con estas seis secciones:
 5. Evidencia de corrección
 6. Estado final de la atención
 
-Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
+Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final; si el hallazgo pasó por `/am:fix` y se cierra sin `Fixed`, la sección 6 indica si ese cambio fue revertido o sigue en OutSystems. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
 
 ### Identificadores
 
@@ -206,7 +208,7 @@ El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patró
 
 </details>
 
-Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefixes` de `_progress.md`. Los ID ya asignados en un `_progress.md` existente no cambian.
+Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefixes` de `_progress.md`. Los ID ya asignados en un `_progress.md` existente no cambian. La sección `Prefixes` guarda además el último consecutivo de cada prefijo (columna `Last`), así que un ID nunca se reutiliza, ni siquiera después de `/am:clean` (con `all`, el `_progress.md` nuevo conserva esa sección).
 
 ## Garantías de diseño
 

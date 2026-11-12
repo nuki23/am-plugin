@@ -16,7 +16,40 @@ dato personal; solo el nombre y la ruta del elemento. Si un documento de origen 
 contiene, omítelo en el resumen y avisa. El resumen se entrega: no incluye los ID
 internos; identifica cada hallazgo por Module, Object Name y Pattern.
 
-1. Lee `reports/_progress.md` (formato definido en `/am:review`). Un hallazgo está "en
+## Referencia rápida
+
+Este bloque es idéntico en close, redo, fix, clean, status y summary; la referencia
+completa es `/am:review`.
+
+- **`reports/_progress.md`** tiene dos tablas:
+  - `Prefixes`: `Prefix | Pattern Name | Last`. `Last` es el último consecutivo
+    asignado a ese prefijo; solo `/am:review` lo sube y ningún comando lo reduce.
+  - `Findings`: `ID | Module | Pattern | Element | Object Path | Doc status |
+    Final status | Updated | Folder`. Las filas van en el orden de trabajo: el primer
+    `pending` es el siguiente.
+- **`Doc status`:** `pending`, `draft`, `implemented`, `closed` o `skipped`.
+- **`Final status`:** en `closed`, `Fixed`, `Already fixed`, `False positive` o
+  `Won't fix`; en `skipped`, el motivo de AI Mentor (`Snooze Reason Label`), que nunca
+  cuenta como cierre; vacío en los demás.
+- **`Updated`:** `AAAA-MM-DD` del último cambio de `Doc status`; la actualiza todo
+  comando que cambie el estado.
+- **Carpeta del hallazgo:** `reports/<Module>/<ID>-<Object Name>/` (columna `Folder`,
+  relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
+  por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
+  final.
+- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
+  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
+  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
+  si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
+  de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
+  instalar la librería, nunca el lenguaje. Sin Python ni Node, el PDF queda pendiente:
+  avisa y pregunta cómo seguir.
+- `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
+
+## Pasos
+
+1. Lee `reports/_progress.md` (formato en "Referencia rápida"). Un hallazgo está "en
    el periodo" si su columna `Updated` cae entre la fecha de inicio y hoy. Si hay filas
    sin fecha, avisa cuántas no se pudieron ubicar en el periodo y no las inventes.
 2. Lee `solution.md` (incluidas sus secciones `## Cierre` y `## Pospuesto`) e
@@ -42,7 +75,7 @@ internos; identifica cada hallazgo por Module, Object Name y Pattern.
    - Dudas técnicas o funcionales abiertas para llevar a la sesión.
    - Plan propuesto para la semana siguiente (qué módulo sigue).
 4. Genera el mismo contenido en PDF como `reports/_summaries/summary-<AAAA-MM-DD>.pdf`
-   (tipo `summary`), como indica "Generación de PDF" en `/am:review`: reutiliza el
+   (tipo `summary`), como indica "Script de PDF" en "Referencia rápida": reutiliza el
    script existente o, si no hay, créalo con Python o Node según lo disponible. Si no
    hay ninguno de los dos, deja solo el .md, avisa que el PDF queda pendiente y
    pregunta cómo seguir.

@@ -37,20 +37,21 @@ contenido de los documentos, en español.
 - **Ruta a un .xlsx** → Paso 0 con ese archivo.
 - **Sin argumento** → si existe `reports/_progress.md`, continúa con el primer
   `pending` de la tabla (la tabla ya está en el orden de trabajo confirmado); si no
-  existe, pide la ruta del Excel.
+  existe o no queda ningún `pending`, dilo y pide la ruta del Excel.
 
 ## Formato de `reports/_progress.md`
 
-Esta es la definición de referencia; los demás comandos la usan.
+Esta es la definición de referencia. Los demás comandos llevan un resumen ("Referencia
+rápida") que debe coincidir con ella.
 
 ```
 # AI Mentor progress
 
 ## Prefixes
 
-| Prefix | Pattern Name |
-|---|---|
-| SRC | Server requests in client events |
+| Prefix | Pattern Name | Last |
+|---|---|---|
+| SRC | Server requests in client events | 12 |
 
 ## Findings
 
@@ -58,6 +59,11 @@ Esta es la definición de referencia; los demás comandos la usan.
 |---|---|---|---|---|---|---|---|---|
 ```
 
+- `Prefixes`: una fila por cada prefijo usado en el proyecto, venga de la tabla fija o
+  sea generado. `Last` es el último consecutivo asignado a ese prefijo (`12` si el
+  último ID fue `SRC-012`). Solo `/am:review` lo sube, al asignar un ID; ningún comando
+  lo reduce, ni siquiera cuando `/am:clean` archiva filas. Así un ID archivado nunca se
+  vuelve a asignar.
 - `Doc status`: `pending`, `draft`, `implemented`, `closed` o `skipped`.
 - `Final status`:
   - En `closed`: `Fixed`, `Already fixed`, `False positive` o `Won't fix` (lo escribe
@@ -164,7 +170,14 @@ Esta es la definición de referencia; los demás comandos la usan.
      choque con ninguno de los existentes (tabla fija ni sección `Prefixes`) y regístralo
      en la sección `Prefixes` de `_progress.md`.
    - Los ID ya asignados en un `_progress.md` existente no cambian. Un hallazgo nuevo
-     continúa el consecutivo desde el mayor ya usado con su prefijo.
+     toma `Last` + 1 de su prefijo en la sección `Prefixes`, y `Last` se actualiza en
+     ese momento. No numeres desde el mayor ID de `Findings`: `/am:clean` pudo archivar
+     filas con consecutivos más altos.
+   - Si el prefijo aún no tiene fila en `Prefixes` (también los de la tabla fija),
+     agrégala con `Last` = 0 antes de numerar.
+   - Si un `_progress.md` existente no tiene la columna `Last`, agrégala con el mayor
+     consecutivo de cada prefijo en `Findings`, y avisa que desde ahí no se pueden
+     conocer los ID que se hayan archivado antes.
 3. Crea o actualiza `reports/_progress.md` con el formato de arriba. Estado inicial
    `pending`, `Final status` vacío, `Updated` con la fecha de hoy. Si ya existe,
    respétalo: identifica cada fila por `Pattern Name` + `Object Path`, conserva los ID,

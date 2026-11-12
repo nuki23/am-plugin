@@ -43,19 +43,22 @@ README.md
 
 ## Formato de `_progress.md`
 
-La definición de referencia está en `commands/review.md`; los demás comandos la
-referencian.
+La definición de referencia está en `commands/review.md`; los demás comandos llevan
+un resumen (bloque "Referencia rápida").
 
 ```
 # AI Mentor progress
 
 ## Prefixes
-| Prefix | Pattern Name |
+| Prefix | Pattern Name | Last |
 
 ## Findings
 | ID | Module | Pattern | Element | Object Path | Doc status | Final status | Updated | Folder |
 ```
 
+- `Last` (sección `Prefixes`): último consecutivo asignado a cada prefijo, con una fila
+  por prefijo usado. review numera desde `Last` + 1 y lo actualiza; ningún comando lo
+  reduce. Así un ID archivado por clean nunca se repite.
 - `Doc status`: `pending`, `draft`, `implemented`, `closed`, `skipped`.
 - `Final status`: en `closed`, `Fixed`, `Already fixed`, `False positive` o `Won't fix`
   (close); en `skipped`, el valor de `Snooze Reason Label` del Excel (review); vacío en
@@ -72,7 +75,8 @@ referencian.
     Object Type, Object Path, fecha de análisis) y el "Estado sugerido en AI Mentor"
     con una justificación de una línea (review, redo);
   - `## Cierre` (estado final, fecha y, según el caso, lo verificado o la justificación
-    y quién aprobó) que escribe close y lee summary;
+    y quién aprobó; si un `implemented` se cierra sin `Fixed`, también si el cambio de
+    `/am:fix` se revierte) que escribe close y lee summary;
   - `## Pospuesto` (fecha y motivo de un Remind me later) que escribe close.
 
 ## Estados de AI Mentor
@@ -101,10 +105,19 @@ referencian.
   Lo no verificado se marca "No verificado: ...". Implementado no es validado.
 - **Nunca borrar:** `/am:clean` archiva en `reports/_archive/<fecha>/`, incluidas las
   filas que quita (`_progress-removed.md`); lista lo que va a mover y espera un sí;
-  `all` exige que el usuario escriba `ARCHIVAR TODO`.
+  `all` exige que el usuario escriba `ARCHIVAR TODO`. clean nunca reduce `Last`; con
+  `all`, el `_progress.md` nuevo conserva la sección `Prefixes` con sus valores.
 - **Estados del progreso:** `pending`, `draft`, `implemented`, `closed`, `skipped`. Si
   un cambio agrega o renombra un estado, actualizarlo en todos los comandos que lo usan
   (hoy: los siete) y en el README (tabla y diagrama).
+- **Bloque "Referencia rápida" sincronizado:** close, redo, fix, clean, status y
+  summary llevan un bloque idéntico (columnas de `_progress.md`, valores de
+  `Doc status` y `Final status`, nombres de carpeta y PDF, script de PDF) para no
+  depender de leer `review.md`, que sigue siendo la referencia completa. Si cambia algo
+  de eso, se actualiza `review.md` y el bloque en los seis, y se comprueba que sigue
+  idéntico.
+- **close no deja cierres a medias:** comprueba que se puede generar el PDF antes de
+  escribir `## Cierre`.
 - **PDF de solución, siempre seis secciones:**
   1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name,
      Object Type, Object Path y fecha de análisis; sin ID)
@@ -112,7 +125,9 @@ referencian.
   3. Descripción de la causa identificada
   4. Solución aplicada ("Solución propuesta" mientras es borrador)
   5. Evidencia de corrección
-  6. Estado final de la atención
+  6. Estado final de la atención (si el hallazgo estaba `implemented` y se cierra sin
+     `Fixed`, lleva una línea con el estado del cambio hecho por `/am:fix`: revertido,
+     solo con confirmación del usuario, o sigue en OutSystems)
 - **Sin secretos ni datos personales en la salida:** ningún comando copia a `.md`, PDF ni
   al chat el valor de un secreto, credencial, token o dato personal; solo el nombre y la
   ruta del elemento. Todo comando nuevo debe incluir esta regla.
@@ -127,6 +142,7 @@ referencian.
 1. Antes de editar, decir qué archivos se van a tocar y por qué.
 2. Mantener la coherencia entre comandos: si cambia la estructura de carpetas, el formato
    de `_progress.md` o el de los documentos, revisar los siete archivos de `commands/`.
+   El bloque "Referencia rápida" debe quedar idéntico en los seis comandos que lo llevan.
 3. Actualizar el README si cambia un comando, su argumento o su uso.
 4. Subir la versión en `plugins/am/.claude-plugin/plugin.json` y en el badge del README
    (semver: patch para ajustes de texto, minor para comandos o comportamiento nuevo).
