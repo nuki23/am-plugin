@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.3.1-2563eb)
+![versión](https://img.shields.io/badge/versión-0.3.2-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -24,6 +24,8 @@ AI Mentor exporta un Excel con los hallazgos de deuda técnica. `am` lo recorre 
 - lee el elemento afectado en OutSystems y encuentra la causa concreta;
 - escribe una **guía `.md`** con los pasos exactos para corregirlo a mano en Service Studio;
 - genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad;
+- incluye siempre la alternativa de menor cambio, y te avisa cuando la solución cambia el comportamiento de la aplicación (**Requiere decisión funcional**);
+- separa lo que encuentra de otra categoría (seguridad, datos, bugs) como observaciones fuera del alcance, para que lo reportes aparte;
 - te sugiere qué estado darle en AI Mentor (Open, Already fixed, False positive, Won't fix o Remind me later), con una justificación;
 - se detiene y te pregunta antes de pasar al siguiente.
 
@@ -129,28 +131,37 @@ reports/
 ├── _archive/<fecha>/             lo que movió /am:clean
 └── <Module>/
     └── <ID>-<Object Name>/
-        ├── solution.md                         guía para corregirlo a mano
-        ├── <Module>-<Object Name>-<Prefix>.pdf documento formal
-        ├── implementation.md                   solo si usaste /am:fix
-        └── evidence/                           tus pantallazos
+        ├── solution.md                                  guía para corregirlo a mano
+        ├── <Module>-<Parent>-<Object Name>-<Prefix>.pdf documento formal
+        ├── implementation.md                            solo si usaste /am:fix
+        └── evidence/                                    tus pantallazos
 scripts/
 └── generate_pdf.py | .mjs        se crea una vez y se reutiliza
 ```
 
-Los nombres de archivos y carpetas van en inglés; el contenido de los documentos, en español. El PDF se llama, por ejemplo, `Ventas-ValidarPedido-SRC.pdf`: se limpian los caracteres no válidos y, si dos nombres chocan, se agrega un sufijo numérico.
+Los nombres de archivos y carpetas van en inglés; el contenido de los documentos, en español. El PDF lleva el elemento padre del `Object Path` (la pantalla o el flujo que contiene al objeto) y se llama, por ejemplo, `Ventas-PedidoDetalle-ValidarPedido-SRC.pdf`: se limpian los caracteres no válidos y, si dos nombres chocan, se agrega un sufijo numérico. Si el objeto no tiene padre distinto del módulo, el nombre queda `<Module>-<Object Name>-<Prefix>.pdf`.
+
+### La guía `solution.md`
+
+Además de los pasos manuales, la guía trae:
+
+- **Alternativas consideradas**, siempre con la *alternativa mínima*: la opción de menor cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea la recomendada. Antes de proponer consumir un REST de otro módulo del mismo ambiente, el plugin considera referenciar una Server Action o Service Action de ese módulo.
+- **Cambio de comportamiento**, solo cuando la solución hace algo más que eliminar el patrón (arregla un bug, activa lógica que hoy no se ejecuta, cambia datos que se escriben o borran, crea integraciones). El hallazgo queda marcado como **Requiere decisión funcional** en el chat y `/am:fix` no lo implementa sin que confirmes que la decisión se tomó.
+- **Hallazgos relacionados**, solo cuando otro hallazgo del progreso toca el mismo elemento, tema o acción compartida. Se identifican por pantalla y patrón (el ID solo se menciona en el chat) y la guía indica si conviene corregirlos juntos para publicar una sola vez.
+- **Observaciones fuera del alcance**, solo cuando el análisis encuentra algo de otra categoría (seguridad, datos, un bug). Se destacan en el chat para que las reportes aparte; el PDF solo dice, en una línea, que se reportan por separado. Al cerrar, `/am:close` te pregunta si ya las reportaste, y solo entonces el PDF final lo dice en pasado.
 
 ### El PDF de solución
 
-Siempre con estas seis secciones:
+El título es `<Parent> > <Object Name>` (por ejemplo, "PedidoDetalle > ValidarPedido"). Los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea. Siempre con estas seis secciones:
 
-1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path y fecha de análisis)
+1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path y Fecha de análisis, con esas etiquetas y en ese orden)
 2. Módulo afectado
 3. Descripción de la causa identificada
 4. Solución aplicada
 5. Evidencia de corrección
 6. Estado final de la atención
 
-Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. `/am:close` genera la versión final; si el hallazgo pasó por `/am:fix` y se cierra sin `Fixed`, la sección 6 indica si ese cambio fue revertido o sigue en OutSystems. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
+Mientras el hallazgo está en `draft`, el PDF sale marcado como **BORRADOR**, la sección 4 se titula "Solución propuesta" y las secciones 5 y 6 quedan pendientes. Si la solución cambia el comportamiento, la sección 4 lleva un apartado "Cambio de comportamiento". `/am:close` genera la versión final; si el hallazgo pasó por `/am:fix` y se cierra sin `Fixed`, la sección 6 indica si ese cambio fue revertido o sigue en OutSystems. Ni el PDF ni `solution.md` incluyen el ID interno ni el estado sugerido en AI Mentor.
 
 ### Identificadores
 
@@ -222,7 +233,7 @@ Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que 
 
 ### Sobre `/am:fix`
 
-Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente; luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
+Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
 
 ## Privacidad
 

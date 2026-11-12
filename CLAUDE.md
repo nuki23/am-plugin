@@ -25,11 +25,13 @@ README.md
   - `reports/_summaries/summary-AAAA-MM-DD.md` y `.pdf`
   - `reports/_archive/<AAAA-MM-DD>/` (solo `/am:clean`; los demás comandos lo ignoran)
   - `reports/<Module>/<ID>-<Object Name>/` con `solution.md`,
-    `<Module>-<Object Name>-<Prefix>.pdf`, `implementation.md` (solo si pasó por
-    `/am:fix`) y `evidence/`.
+    `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, `implementation.md` (solo si pasó
+    por `/am:fix`) y `evidence/`.
 - **Nombres de archivo** (regla de referencia en `commands/review.md`): se limpian
   espacios y `\ / : * ? " < > |`; el PDF es único en `reports/` (sufijo `-2`, `-3` si
-  choca) y redo/close reutilizan el nombre existente al regenerarlo.
+  choca) y redo/close reutilizan el nombre existente al regenerarlo. `<Parent>` es el
+  segmento anterior al último de `Object Path`; se omite si no hay o es el módulo. El
+  título del PDF es `<Parent> > <Object Name>`.
 - **ID interno** (`SRC-001`): solo en `_progress.md`, en el nombre de la carpeta y en el
   chat. Nunca en `solution.md`, `implementation.md` ni en ningún PDF.
 - **PDF:** la regla de referencia es la sección "Generación de PDF" de
@@ -74,6 +76,19 @@ un resumen (bloque "Referencia rápida").
   - arriba, la identificación (App, Module, Category, Pattern Name, Object Name,
     Object Type, Object Path, fecha de análisis) y el "Estado sugerido en AI Mentor"
     con una justificación de una línea (review, redo);
+  - "Alternativas consideradas", siempre con la "Alternativa mínima": la de menor
+    cambio que elimina el patrón sin alterar el comportamiento (review, redo);
+  - `## Cambio de comportamiento`, solo si la solución hace algo más que eliminar el
+    patrón; empieza con "Requiere decisión funcional" (escriben review y redo; lo leen
+    fix y close);
+  - `## Hallazgos relacionados`, solo si otro hallazgo de `_progress.md` toca el mismo
+    elemento, tema o acción compartida: identificados por pantalla y patrón, sin ID
+    (en el chat sí va el ID), con la indicación de si conviene corregirlos juntos para
+    publicar una sola vez; va antes de las observaciones (review, redo);
+  - `## Observaciones fuera del alcance`, solo si hay: último apartado del análisis,
+    antes de `## Pospuesto` y `## Cierre` (review, redo);
+  - los identificadores (clases CSS, nombres de acciones, rutas), entre comillas
+    invertidas;
   - `## Cierre` (estado final, fecha y, según el caso, lo verificado o la justificación
     y quién aprobó; si un `implemented` se cierra sin `Fixed`, también si el cambio de
     `/am:fix` se revierte) que escribe close y lee summary;
@@ -98,6 +113,13 @@ un resumen (bloque "Referencia rápida").
 - **OutSystems es solo lectura** en todos los comandos, excepto `/am:fix`, que exige:
   conexión con escritura, ambiente de Desarrollo y confirmación explícita del plan de
   cambio dentro de esa misma invocación. `/am:fix` mantiene `disable-model-invocation: true`.
+  Si `solution.md` tiene `## Cambio de comportamiento`, `/am:fix` se niega a implementar
+  sin que el usuario confirme, en esa invocación, que la decisión funcional se tomó.
+- **Solución sin sorpresas:** review y redo incluyen siempre la alternativa mínima,
+  consideran referenciar una Server Action o Service Action antes de proponer un REST
+  de otro módulo del mismo ambiente, declaran todo cambio de comportamiento
+  ("Requiere decisión funcional" en el chat) y dejan lo de otra categoría (seguridad,
+  datos, bug) en "Observaciones fuera del alcance", destacado en el chat.
   Ningún comando cambia el estado del hallazgo en AI Mentor.
 - **Un hallazgo a la vez:** `/am:review` se detiene tras cada hallazgo y pregunta antes de
   seguir; `/am:fix` atiende un solo ID por invocación.
@@ -119,15 +141,24 @@ un resumen (bloque "Referencia rápida").
 - **close no deja cierres a medias:** comprueba que se puede generar el PDF antes de
   escribir `## Cierre`.
 - **PDF de solución, siempre seis secciones:**
-  1. Identificación del hallazgo (App, Module, Category, Pattern Name, Object Name,
-     Object Type, Object Path y fecha de análisis; sin ID)
+  1. Identificación del hallazgo: ocho etiquetas fijas, en este orden y sin traducir
+     (App, Module, Category, Pattern Name, Object Name, Object Type, Object Path,
+     Fecha de análisis; sin ID)
   2. Módulo afectado
-  3. Descripción de la causa identificada
-  4. Solución aplicada ("Solución propuesta" mientras es borrador)
+  3. Descripción de la causa identificada (si hay observaciones fuera del alcance,
+     termina con una sola línea que dice que se reportan por separado, sin detalle;
+     en pasado solo en el PDF final y si el usuario confirmó en close que ya las
+     reportó, lo que queda anotado en `## Cierre`)
+  4. Solución aplicada ("Solución propuesta" mientras es borrador; con el apartado
+     "Cambio de comportamiento" si `solution.md` lo tiene)
   5. Evidencia de corrección
   6. Estado final de la atención (si el hallazgo estaba `implemented` y se cierra sin
      `Fixed`, lleva una línea con el estado del cambio hecho por `/am:fix`: revertido,
      solo con confirmación del usuario, o sigue en OutSystems)
+
+  El script no deja una sección sola en la última página ni separa un título de su
+  contenido. Los identificadores van en fuente monoespaciada y no se parten al final
+  de la línea.
 - **Sin secretos ni datos personales en la salida:** ningún comando copia a `.md`, PDF ni
   al chat el valor de un secreto, credencial, token o dato personal; solo el nombre y la
   ruta del elemento. Todo comando nuevo debe incluir esta regla.

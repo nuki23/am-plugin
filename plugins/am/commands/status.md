@@ -46,9 +46,11 @@ completa es `/am:review`.
   relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
   por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
   final.
-- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
-  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
-  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **PDF de solución:** `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, donde `<Parent>`
+  es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
+  `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
+  reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
+  `<Parent> > <Object Name>`. No lleva el ID.
 - **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
   si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
   de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes

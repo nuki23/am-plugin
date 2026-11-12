@@ -36,9 +36,11 @@ completa es `/am:review`.
   relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
   por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
   final.
-- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
-  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
-  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **PDF de solución:** `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, donde `<Parent>`
+  es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
+  `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
+  reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
+  `<Parent> > <Object Name>`. No lleva el ID.
 - **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
   si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
   de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
@@ -59,25 +61,63 @@ completa es `/am:review`.
    del análisis anterior sin verificarlas.
 5. Reescribe `solution.md` con estas secciones, en este orden y sin el ID:
    - Identificación (App, Module, Category, Pattern Name, Object Name, Object Type,
-     Object Path y fecha de análisis)
+     Object Path y Fecha de análisis, con esas etiquetas y en ese orden)
    - Estado sugerido en AI Mentor, con su justificación de una línea
    - Resumen del hallazgo
    - Dónde está
    - Por qué AI Mentor lo marca
    - Cómo se llegó a la solución
+   - Cambio de comportamiento (`## Cambio de comportamiento`), solo si aplica
    - Pasos manuales
-   - Alternativas consideradas
+   - Alternativas consideradas, siempre con la "Alternativa mínima"
    - Impacto y qué probar después
    - Cómo verificar en AI Mentor
    - Qué pantallazos tomar para la evidencia
    - Puntos no verificados, si los hay
+   - Hallazgos relacionados (`## Hallazgos relacionados`), solo si hay
+   - Observaciones fuera del alcance (`## Observaciones fuera del alcance`), solo si hay
 
    Reevalúa el "Estado sugerido en AI Mentor" (nunca `False positive` ni `Won't fix`
-   sin explicar qué se verificó). Conserva la sección `## Pospuesto` si existía. No
-   toques la carpeta `evidence/`.
+   sin explicar qué se verificó). Conserva la sección `## Pospuesto` si existía, después
+   de las anteriores. No toques la carpeta `evidence/`.
+
+   Aplica las mismas reglas de análisis que `/am:review`:
+   - **Alternativa mínima:** incluye siempre la opción de menor cambio que elimina el
+     patrón sin alterar el comportamiento actual, aunque no sea la recomendada; si no
+     existe, dilo y explica por qué.
+   - **Referencia antes que REST:** antes de proponer consumir un REST de otro módulo
+     del mismo ambiente, considera referenciar una Server Action o una Service Action
+     de ese módulo.
+   - **Cambio de comportamiento:** si la solución hace algo más que eliminar el patrón
+     (arregla un bug, activa lógica que hoy no se ejecuta, cambia datos que se escriben
+     o se borran, crea integraciones), escribe el apartado: primera línea "Requiere
+     decisión funcional"; luego qué hace hoy, qué hará después, qué se ve afectado y
+     que la alternativa mínima lo evita. Si la solución nueva ya no cambia el
+     comportamiento, quita el apartado.
+   - **Hallazgos relacionados:** revisa en `_progress.md` si otro hallazgo toca el
+     mismo elemento, tema o acción compartida. Si los hay, escribe el apartado
+     identificándolos por pantalla (o elemento) y patrón, nunca por el ID, e indica si
+     conviene corregirlos juntos para publicar una sola vez. Si ya no hay ninguno,
+     quita el apartado.
+   - **Observaciones fuera del alcance:** lo que encuentres de otra categoría
+     (seguridad, datos, bug) va en ese apartado, no en la solución; conserva las
+     observaciones anteriores que sigan vigentes.
+   - **Identificadores:** clases CSS, nombres de acciones y demás elementos, y rutas,
+     van entre comillas invertidas; el PDF los muestra en fuente monoespaciada y sin
+     partirlos al final de la línea.
 6. Estado al terminar. Regenera el PDF de solución (tipo `finding`), reutilizando el
    nombre del `.pdf` que ya está en la carpeta; si no hay Python ni Node, avisa que el
-   PDF queda pendiente y pregunta cómo seguir.
+   PDF queda pendiente y pregunta cómo seguir. El PDF sigue el formato de `/am:review`:
+   título `<Parent> > <Object Name>`, las ocho etiquetas de la sección 1 (App, Module,
+   Category, Pattern Name, Object Name, Object Type, Object Path, Fecha de análisis),
+   el apartado "Cambio de comportamiento" en la sección 4 si existe en `solution.md`,
+   una sola línea al final de la sección 3 si hay observaciones fuera del alcance
+   ("Durante el análisis se identificaron observaciones fuera del alcance de este
+   hallazgo; se reportan por separado."), los identificadores en monoespaciada y sin
+   partirse, y ninguna sección sola en la última página. Esa línea solo va en pasado
+   ("se reportaron por separado") en un PDF final cuya sección `## Cierre` registra
+   que el usuario confirmó que ya las reportó; si quitas `## Cierre`, vuelve al
+   presente.
    - **Si la solución cambió, queda `draft`**: PDF en modo borrador, vacía
      `Final status` y quita la sección `## Cierre` de `solution.md` si existía. Si
      estaba `implemented`, además avisa claramente que lo implementado en OutSystems ya
@@ -90,6 +130,10 @@ completa es `/am:review`.
 7. Si el estado cambió, actualiza la fila en `_progress.md`: `Doc status`,
    `Final status` si corresponde, y `Updated` = hoy.
 8. Resume qué cambió respecto a la versión anterior, el estado sugerido en AI Mentor y
-   en qué estado quedó el hallazgo.
+   en qué estado quedó el hallazgo. Destaca, cuando aplique, **Requiere decisión
+   funcional** (qué comportamiento cambia y cuál es la alternativa mínima), los
+   **Hallazgos relacionados** (en el chat sí con su ID, y si conviene corregirlos
+   juntos) y las **Observaciones fuera del alcance**, para que el usuario las reporte
+   aparte.
 
 Lo que no puedas verificar va marcado como "No verificado: ...".

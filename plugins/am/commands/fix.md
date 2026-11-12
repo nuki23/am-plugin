@@ -38,9 +38,11 @@ completa es `/am:review`.
   relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
   por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
   final.
-- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
-  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
-  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **PDF de solución:** `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, donde `<Parent>`
+  es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
+  `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
+  reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
+  `<Parent> > <Object Name>`. No lleva el ID.
 - **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
   si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
   de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
@@ -54,18 +56,30 @@ completa es `/am:review`.
    `draft` y tiene `solution.md`. Si no, indica que primero va `/am:review`.
 2. **Estado sugerido.** Si el "Estado sugerido en AI Mentor" de `solution.md` no es
    `Open`, no hay corrección que implementar: dilo y sugiere `/am:close` o `/am:redo`.
-3. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
+3. **Decisión funcional.** Si `solution.md` tiene el apartado
+   `## Cambio de comportamiento` ("Requiere decisión funcional"), la solución hace algo
+   más que eliminar el patrón. Muestra lo que dice el apartado y pregunta si la
+   decisión funcional ya se tomó y quién la tomó. Sin un sí explícito dentro de esta
+   invocación, niégate a implementar y termina; un sí anterior en la conversación no
+   cuenta, y la aprobación del plan (Paso 2) no lo reemplaza. Si la decisión fue ir por
+   la alternativa mínima u otra distinta de la documentada, no la implementes desde
+   aquí: sugiere `/am:redo` para que `solution.md` refleje lo decidido.
+4. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
    en esta sesión. Si ninguna permite editar y publicar, dilo así: "Esta conexión a
    OutSystems es solo lectura; aplica `solution.md` a mano y luego usa `/am:close`", y
    termina. No busques rutas alternas (automatizar el navegador, APIs no documentadas,
    scripts propios).
-4. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
+5. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
    determinarlo, pregunta. Nunca modifiques QA, Preproducción ni Producción, y nunca
    despliegues entre ambientes.
-5. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
+6. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
    `solution.md`. Si ya no coinciden con lo documentado (alguien cambió la pantalla, la
    acción ya no existe, el hallazgo ya fue corregido), detente y sugiere `/am:redo`.
-6. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
+   Lo mismo si al releer ves que los pasos cambian el comportamiento (arreglan un bug,
+   activan lógica que hoy no se ejecuta, cambian datos que se escriben o se borran,
+   crean integraciones) y `solution.md` no tiene el apartado
+   `## Cambio de comportamiento`.
+7. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
    `solution.md`. Sin un sí, no sigas.
 
 ## Paso 2 — Plan de cambio
@@ -73,6 +87,8 @@ completa es `/am:review`.
 Muestra, antes de tocar nada:
 
 - Elementos que vas a crear, modificar o eliminar, con nombre y ruta exactos.
+- Si el hallazgo requiere decisión funcional: el cambio de comportamiento que se va a
+  introducir y la decisión confirmada en el Paso 1.
 - Qué otros elementos consumen lo que se modifica (impacto).
 - Si vas a publicar el módulo al terminar, o si dejas el cambio sin publicar.
 - Cómo se revierte (versión del módulo a la que habría que volver).
@@ -97,6 +113,8 @@ anterior en la conversación no cuenta.
 2. Escribe `implementation.md` en la carpeta del hallazgo: fecha, ambiente, lista de
    cambios realmente aplicados (elemento por elemento), versión publicada si aplica,
    desviaciones respecto a `solution.md`, y otros hallazgos observados sin tocar. Si
+   el hallazgo requería decisión funcional, anota que el usuario confirmó que se tomó,
+   quién la tomó (el nombre o rol que dio; nunca un correo) y la fecha. Si
    `implementation.md` ya existe (por una solución anterior rehecha con `/am:redo`), no
    lo borres: agrega la nueva implementación como sección fechada al final.
 3. Actualiza la fila en `_progress.md`: `Doc status` = `implemented`, `Updated` = hoy.

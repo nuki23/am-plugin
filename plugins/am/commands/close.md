@@ -36,9 +36,11 @@ completa es `/am:review`.
   relativa a `reports/`; vacía en `pending` y `skipped`). En los nombres se reemplazan
   por `_` los espacios y `\ / : * ? " < > |`, y se quitan los puntos y espacios del
   final.
-- **PDF de solución:** `<Module>-<Object Name>-<Prefix>.pdf`, único en `reports/` (sin
-  contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se reutiliza el
-  nombre del `.pdf` que ya está en la carpeta. No lleva el ID.
+- **PDF de solución:** `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, donde `<Parent>`
+  es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
+  `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
+  reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
+  `<Parent> > <Object Name>`. No lleva el ID.
 - **Script de PDF:** reutiliza `scripts/generate_pdf.py` o `scripts/generate_pdf.mjs`
   si existe. Si no, detecta Python 3 (reportlab) o Node (pdfkit) y créalo con dos tipos
   de documento: `finding` (seis secciones, borrador o final) y `summary`. Puedes
@@ -87,21 +89,42 @@ completa es `/am:review`.
 7. **False positive o Won't fix:**
    - No exijas imágenes en `evidence/` (si las hay, inclúyelas).
    - Pide una justificación escrita y quién aprobó la decisión. Sin ambas, no cierres.
-8. **Comprueba que se puede generar el PDF** antes de escribir el cierre: hay un script
+8. **Observaciones fuera del alcance.** Si `solution.md` tiene
+   `## Observaciones fuera del alcance`, pregunta si el usuario ya las reportó por
+   separado. No las reportas tú, y la respuesta no impide cerrar. Guárdala para
+   `## Cierre` y para la sección 3 del PDF.
+9. **Comprueba que se puede generar el PDF** antes de escribir el cierre: hay un script
    en `scripts/` y su lenguaje responde, o hay Python 3 o Node para crearlo (ver
    "Script de PDF"). Si no se puede, no escribas `## Cierre`, no marques el hallazgo
    `closed`, avisa que el cierre queda pendiente por el PDF y pregunta cómo seguir.
-9. Agrega (o reemplaza, si ya existe) al final de `solution.md` una sección `## Cierre`
+10. Agrega (o reemplaza, si ya existe) al final de `solution.md` (después de
+   `## Observaciones fuera del alcance`, si existe) una sección `## Cierre`
    con: estado final, fecha y, según el caso, lo verificado (Already fixed) o la
    justificación y quién la aprobó (False positive, Won't fix). Si aplicó el paso 4,
    anota también la respuesta sobre el cambio de `/am:fix` (se va a revertir, ya se
    revirtió o se conserva) tal como la dio el usuario; no afirmes que se revirtió sin
-   su confirmación.
-10. Regenera el PDF de solución (tipo `finding`) sin la marca de borrador, reutilizando
+   su confirmación. Si aplicó el paso 8, anota si las observaciones fuera del alcance
+   ya se reportaron por separado (confirmado por el usuario) o siguen por reportar.
+11. Regenera el PDF de solución (tipo `finding`) sin la marca de borrador, reutilizando
     el nombre del `.pdf` que ya está en la carpeta. Si la generación falla pese a la
-    comprobación del paso 8, quita la sección `## Cierre` que acabas de escribir, no
+    comprobación del paso 9, quita la sección `## Cierre` que acabas de escribir, no
     marques el hallazgo `closed`, avisa y pregunta cómo seguir. Contenido:
-    - Sección 4 "Solución aplicada":
+    - Título `<Parent> > <Object Name>` y sección 1 con las ocho etiquetas, en este
+      orden: App, Module, Category, Pattern Name, Object Name, Object Type, Object
+      Path, Fecha de análisis.
+    - Sección 3: si `solution.md` tiene `## Observaciones fuera del alcance`, termina
+      con una sola línea, sin detalle. Solo si el usuario confirmó en el paso 8 que ya
+      las reportó, va en pasado: "Durante el análisis se identificaron observaciones
+      fuera del alcance de este hallazgo; se reportaron por separado." En cualquier
+      otro caso (no las ha reportado, no sabe o no respondió), queda como en el
+      borrador: "...; se reportan por separado."
+    - Los identificadores (clases CSS, nombres de acciones, rutas) van en fuente
+      monoespaciada y sin partirse al final de la línea, también en las
+      justificaciones y en la descripción de la evidencia.
+    - Sección 4 "Solución aplicada". Si `solution.md` tiene
+      `## Cambio de comportamiento` y la sección describe esa solución (Fixed con la
+      solución propuesta, o Won't fix), incluye el apartado "Cambio de comportamiento"
+      que lo dice explícitamente; en Fixed, solo si el cambio aplicado lo conserva.
       - Fixed: lo realmente hecho.
       - Already fixed: "No se requirió corrección: el problema ya no existe en el
         código", con lo verificado.
@@ -116,10 +139,11 @@ completa es `/am:review`.
       confirmó que ya se revirtió; en cualquier otro caso (se conserva o se va a
       revertir después), "sigue en OutSystems".
 
-    Abre el PDF y verifica que las seis secciones y las imágenes quedaron incluidas.
-11. Actualiza la fila en `_progress.md`: `Doc status` = `closed`, `Final status` = la
+    Abre el PDF y verifica que las seis secciones y las imágenes quedaron incluidas, y
+    que ninguna sección quedó sola en la última página.
+12. Actualiza la fila en `_progress.md`: `Doc status` = `closed`, `Final status` = la
     decisión, `Updated` = hoy.
-12. Reporta la ruta del PDF y cuántos hallazgos quedan en `draft`, `implemented` y
+13. Reporta la ruta del PDF y cuántos hallazgos quedan en `draft`, `implemented` y
     `pending`. Recuerda que el estado en AI Mentor lo cambia el usuario.
 
 No afirmes que la corrección fue validada en AI Mentor salvo que el usuario lo diga o
