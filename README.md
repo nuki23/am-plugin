@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.4.0-2563eb)
+![versión](https://img.shields.io/badge/versión-0.5.0-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -23,7 +23,7 @@ AI Mentor exporta un Excel con los hallazgos de deuda técnica. `am` lo recorre 
 
 - lee el elemento afectado en OutSystems y encuentra la causa concreta;
 - escribe una **guía `.md`** con los pasos exactos para corregirlo a mano en Service Studio;
-- genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad, siempre con la misma plantilla;
+- genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad, siempre con el mismo diseño;
 - incluye siempre la alternativa de menor cambio, y te avisa cuando la solución cambia el comportamiento de la aplicación (**Requiere decisión funcional**);
 - separa lo que encuentra de otra categoría (seguridad, datos, bugs) como observaciones fuera del alcance, para que lo reportes aparte;
 - te sugiere qué estado darle en AI Mentor (Open, Already fixed, False positive, Won't fix o Remind me later), con una justificación;
@@ -51,10 +51,10 @@ Para traer una versión nueva:
 | Necesitas | Para qué |
 |---|---|
 | Claude Code con una conexión a OutSystems | Leer módulos, pantallas, acciones y aggregates |
-| Microsoft Edge **o** Google Chrome | Imprimir los PDF (en Windows, Edge ya viene instalado) |
+| Node.js (`node --version` debe responder) | Generar los PDF. No se usa npm: la librería de PDF ya viene con el plugin |
 | El Excel "Code Quality Report" de AI Mentor | Lista de hallazgos a trabajar |
 
-> Sin Edge ni Chrome, el plugin genera las guías `.md` y el `solution.html`, deja el PDF pendiente y no cierra el hallazgo; nunca instala nada por su cuenta.
+> Sin Node, el plugin genera las guías `.md`, deja el PDF pendiente y no cierra el hallazgo; nunca instala nada por su cuenta.
 
 ## Inicio rápido
 
@@ -127,13 +127,12 @@ Todo queda en la carpeta donde ejecutas Claude Code:
 ```
 reports/
 ├── _progress.md                  avance de todos los hallazgos
-├── _template/                    copia de la plantilla de PDF (no la edites)
-├── _summaries/                   summary-<fecha>.md, .html y .pdf de /am:summary
+├── _print.json                   datos de la última impresión de PDF (archivo temporal)
+├── _summaries/                   summary-<fecha>.md y .pdf de /am:summary
 ├── _archive/<fecha>/             lo que movió /am:clean
 └── <Module>/
     └── <ID>-<Object Name>/
         ├── solution.md                                  guía para corregirlo a mano
-        ├── solution.html                                documento del que se imprime el PDF
         ├── <Module>-<Parent>-<Object Name>-<Prefix>.pdf documento formal
         ├── implementation.md                            solo si usaste /am:fix
         └── evidence/                                    tus pantallazos
@@ -153,9 +152,9 @@ Además de los pasos manuales, la guía trae:
 
 ### El PDF de solución
 
-Todos los PDF salen de una plantilla fija que viene con el plugin (`finding.html` y `finding.css`), así que son iguales en todos los proyectos. El plugin la copia a `reports/_template/`, escribe `solution.html` en la carpeta del hallazgo y lo imprime con Edge o Chrome en modo headless; si una versión nueva del plugin trae una plantilla más reciente, reemplaza la copia. No hay script que mantener ni dependencias que instalar. Tampoco hay marca, logo ni archivo de configuración por proyecto: el color, el encabezado y el pie son fijos. Después de imprimir, el plugin comprueba que el PDF existe, que tiene las seis secciones, que las imágenes cargaron y que el texto se puede extraer.
+El diseño de los PDF es fijo y viene con el plugin, así que son iguales en todos los proyectos. Los dibuja un script de Node incluido en el plugin (`generate_pdf.cjs`): el plugin escribe los datos del documento en `reports/_print.json` (un archivo temporal que se sobrescribe en cada impresión) y ejecuta el script. Nada se copia a tu proyecto ni se instala: no hay carpeta `scripts/` que mantener ni `npm install`. Tampoco hay marca, logo ni archivo de configuración por proyecto: el color, el encabezado y el pie son fijos. Después de generar, el plugin comprueba que el PDF existe, que es de esa ejecución y que tiene sus seis secciones y las figuras esperadas. Las capturas de `evidence/` deben ser PNG o JPG.
 
-El título es `<Parent> › <Object Name>` (por ejemplo, "PedidoDetalle › ValidarPedido"), en la fuente normal de los títulos. Bajo el título, una ficha resume categoría, patrón, fecha de análisis y estado. En el resto del documento, los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y no se parten al final de la línea; los muy largos solo se parten en sus separadores (`>`, `/`, `.`). Siempre con estas seis secciones:
+El título es `<Parent> › <Object Name>` (por ejemplo, "PedidoDetalle › ValidarPedido"). Bajo el título, una ficha resume categoría, patrón, fecha de análisis y estado. En el resto del documento, los identificadores (clases CSS, nombres de acciones, rutas) van en fuente monoespaciada y los largos se parten en sus separadores (`>`, `/`, `.`). Siempre con estas seis secciones:
 
 1. Identificación del hallazgo (App, Módulo, Objeto con su tipo y Ruta del objeto)
 2. Módulo afectado
@@ -237,6 +236,10 @@ Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que 
 ### Sobre `/am:fix`
 
 Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
+
+## Licencias
+
+Los PDF se generan con [PDFKit](https://pdfkit.org/), incluido en el plugin como `pdfkit.bundle.cjs` y distribuido, con sus dependencias, bajo licencia MIT.
 
 ## Privacidad
 

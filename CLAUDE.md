@@ -9,8 +9,9 @@ sobre aplicaciones OutSystems. Repo público: github.com/nuki23/am-plugin.
 .claude-plugin/marketplace.json     marketplace "nuki23" (owner "nuki23")
 plugins/am/.claude-plugin/plugin.json   plugin "am" + versión (author "nuki23")
 plugins/am/commands/<nombre>.md     un archivo por comando → /am:<nombre>
-plugins/am/templates/               plantilla fija de PDF: TEMPLATE.md, finding.css,
-                                    finding.html, summary.html
+plugins/am/scripts/                 generador fijo de PDF: generate_pdf.cjs (diseño),
+                                    pdfkit.bundle.cjs (PDFKit empaquetado, MIT) y
+                                    PDF-FORMAT.md (formato de los datos)
 README.md
 ```
 
@@ -21,15 +22,17 @@ README.md
   `clean`. `fix` y `clean` llevan `disable-model-invocation: true`.
 - **Idioma:** nombres internos (archivos, carpetas, columnas, estados) en inglés;
   contenido de los documentos y textos de los comandos, en español. Los encabezados
-  dentro de `solution.md` (`## Cierre`, `## Pospuesto`) son contenido, igual que los
-  campos (`{{TITULO}}`) y las etiquetas de la plantilla de PDF.
+  dentro de `solution.md` (`## Cierre`, `## Pospuesto`) son contenido, igual que las
+  etiquetas que el script pone en el PDF. Los campos del archivo de datos
+  (`affected`, `cause`, `kind`...) son nombres internos; sus valores `antes`,
+  `despues` y `validacion` los fija el script.
 - Salida que generan los comandos (en el proyecto del usuario, nunca en este repo):
   - `reports/_progress.md`
-  - `reports/_template/` (copia de `finding.css`, `finding.html` y `summary.html`;
-    nunca se edita)
-  - `reports/_summaries/summary-AAAA-MM-DD.md`, `.html` y `.pdf`
+  - `reports/_print.json` (datos de la última impresión de PDF; un único archivo
+    temporal que se sobrescribe, no se borra y no se crea por hallazgo)
+  - `reports/_summaries/summary-AAAA-MM-DD.md` y `.pdf`
   - `reports/_archive/<AAAA-MM-DD>/` (solo `/am:clean`; los demás comandos lo ignoran)
-  - `reports/<Module>/<ID>-<Object Name>/` con `solution.md`, `solution.html`,
+  - `reports/<Module>/<ID>-<Object Name>/` con `solution.md`,
     `<Module>-<Parent>-<Object Name>-<Prefix>.pdf`, `implementation.md` (solo si pasó
     por `/am:fix`) y `evidence/`.
 - **Nombres de archivo** (regla de referencia en `commands/review.md`): se limpian
@@ -38,29 +41,38 @@ README.md
   segmento anterior al último de `Object Path`; se omite si no hay o es el módulo. El
   título del PDF es `<Parent> › <Object Name>`.
 - **ID interno** (`SRC-001`): solo en `_progress.md`, en el nombre de la carpeta y en el
-  chat. Nunca en `solution.md`, `solution.html`, `implementation.md` ni en ningún PDF.
-- **PDF:** todos salen de la plantilla fija de `plugins/am/templates/`, para que sean
+  chat. Nunca en `solution.md`, `implementation.md` ni en ningún PDF.
+- **PDF:** todos los dibuja el script fijo de `plugins/am/scripts/`, para que sean
   iguales en todos los proyectos. La regla de referencia es la sección "Generación de
-  PDF" de `commands/review.md` más `templates/TEMPLATE.md` (campos, tabla de estados,
-  catálogo de componentes y comando de impresión); redo, close y summary las
-  referencian.
-  - **Cómo llega al proyecto:** los comandos leen la plantilla en
-    `${CLAUDE_PLUGIN_ROOT}/templates/` (Claude Code sustituye la variable en el
-    cuerpo del comando; no existe como variable de entorno en Bash) y copian
-    `finding.css`, `finding.html` y `summary.html` a `reports/_template/`. Si la ruta
-    no resuelve, buscan en `~/.claude/plugins/cache/nuki23/am/<versión>/templates/`;
-    si tampoco está, se detienen. `TEMPLATE.md` se lee del plugin, no se copia.
-  - **Versión de la plantilla:** el número del primer comentario de `finding.css`
-    ("versión N"); `finding.html` y `summary.html` llevan el mismo. Si la copia del
-    proyecto falta o es anterior, se reemplaza. Al cambiar cualquier archivo de la
-    plantilla ya publicada, subir ese número en los tres.
-  - **Generación:** review, redo y close escriben `solution.html` desde
-    `finding.html`; summary escribe `summary-AAAA-MM-DD.html` desde `summary.html`.
-    Se imprime con Edge o Chrome en modo headless, por su ruta completa (en Windows:
-    Edge en `Program Files`, luego en `Program Files (x86)`, luego Chrome).
-  - **Sin script ni dependencias:** no hay script de PDF ni se instala nada. Sin
-    navegador, o si la impresión falla, queda el `.html`, se avisa y el hallazgo no
-    se marca `closed`.
+  PDF" de `commands/review.md` más `scripts/PDF-FORMAT.md` (campos, campos
+  obligatorios, bloques y códigos de salida); redo, close y summary las referencian.
+  - **Cómo se ejecuta:** `node "${CLAUDE_PLUGIN_ROOT}/scripts/generate_pdf.cjs"
+    "reports/_print.json" "<salida>.pdf"`. Claude Code sustituye la variable en el
+    cuerpo del comando; no existe como variable de entorno en Bash. Si la ruta no
+    resuelve, los comandos buscan en
+    `~/.claude/plugins/cache/nuki23/am/<versión>/scripts/`; si tampoco está, se
+    detienen. El script no se copia al proyecto.
+  - **Solo Node, sin npm:** los comandos comprueban `node --version`. La librería va
+    en `pdfkit.bundle.cjs`; no se instala nada. Sin Node, queda `solution.md`, se
+    avisa que el PDF queda pendiente y el hallazgo no se marca `closed`.
+  - **Datos:** review, redo y close escriben `reports/_print.json` con
+    `"type": "finding"` y `baseDir` = la carpeta del hallazgo; summary, con
+    `"type": "summary"`. `state` sale del estado del hallazgo (`draft`, `fixed`,
+    `already-fixed`, `false-positive`, `wont-fix`); la etiqueta, el título de la
+    sección 4 y la sección 6 los pone el script. Fechas en formato `12 nov 2026`.
+  - **Códigos de salida:** 0 correcto; 3 faltó una imagen (corregir la ruta y
+    repetir; si no es PNG ni JPG, pedir convertirla); 1 no se pudo escribir (PDF
+    abierto en un visor: pedir cerrarlo); 2 datos no válidos (corregir `_print.json`
+    y repetir); 4 error inesperado (mostrar el mensaje y detenerse). El script valida
+    los campos obligatorios: los comandos no repiten esa validación, manejan el 2.
+  - **Versión del script:** el número del primer comentario de `generate_pdf.cjs`
+    ("versión N") y su constante `VERSION`; `PDF-FORMAT.md` lleva el mismo en su
+    título.
+  - **Proyectos de versiones anteriores:** los archivos que dejaron en el proyecto
+    las versiones 0.4.0 y anteriores se ignoran: no se usan, no se actualizan y no se
+    borran. Se nombran solo en "Generación de PDF" de `review.md` y en una línea del
+    bloque "Referencia rápida"; en ningún otro archivo del repo. `/am:clean all` los
+    archiva con todo lo demás.
 
 ## Formato de `_progress.md`
 
@@ -119,8 +131,10 @@ un resumen (bloque "Referencia rápida").
   - los identificadores (clases CSS, nombres de acciones, rutas), entre comillas
     invertidas;
   - `## Cierre` (estado final, fecha y, según el caso, lo verificado o la justificación
-    y quién aprobó; si un `implemented` se cierra sin `Fixed`, también si el cambio de
-    `/am:fix` se revierte) que escribe close y lee summary;
+    y quién aprobó; el ambiente, la versión publicada y la fecha de validación, si se
+    dieron; quién tomó la decisión funcional, si el cambio aplicado conserva un
+    cambio de comportamiento; si un `implemented` se cierra sin `Fixed`, también si
+    el cambio de `/am:fix` se revierte) que escribe close y leen summary y redo;
   - `## Pospuesto` (fecha y motivo de un Remind me later) que escribe close.
 
 ## Estados de AI Mentor
@@ -159,23 +173,27 @@ un resumen (bloque "Referencia rápida").
   Lo no verificado se marca "No verificado: ...". Implementado no es validado.
 - **Nunca borrar:** `/am:clean` archiva en `reports/_archive/<fecha>/`, incluidas las
   filas que quita (`_progress-removed.md`); lista lo que va a mover y espera un sí;
-  `all` exige que el usuario escriba `ARCHIVAR TODO`. clean nunca reduce `Last`; con
+  `all` exige que el usuario escriba `ARCHIVAR TODO`. clean nunca archiva ni mueve
+  `reports/_print.json`: con `all`, en `reports/` quedan solo `_archive/` y ese
+  archivo. clean nunca reduce `Last`; con
   `all`, el `_progress.md` nuevo conserva la sección `Prefixes` con sus valores.
 - **Estados del progreso:** `pending`, `draft`, `implemented`, `closed`, `skipped`. Si
   un cambio agrega o renombra un estado, actualizarlo en todos los comandos que lo usan
   (hoy: los siete) y en el README (tabla y diagrama).
 - **Bloque "Referencia rápida" sincronizado:** close, redo, fix, clean, status y
   summary llevan un bloque idéntico (columnas de `_progress.md`, valores de
-  `Doc status` y `Final status`, nombres de carpeta y PDF, plantilla y generación del
+  `Doc status` y `Final status`, nombres de carpeta y PDF, script y generación del
   PDF) para no
   depender de leer `review.md`, que sigue siendo la referencia completa. Si cambia algo
   de eso, se actualiza `review.md` y el bloque en los seis, y se comprueba que sigue
   idéntico.
-- **close no deja cierres a medias:** escribe `solution.html`, imprime y comprueba el
-  PDF antes de escribir `## Cierre` y de marcar `closed`. Si el PDF no sale, queda
-  `solution.html` y el hallazgo sigue como estaba.
-- **PDF de solución, siempre seis secciones**, con el orden y los títulos de
-  `templates/finding.html`:
+- **close no deja cierres a medias:** comprueba Node, genera y comprueba el PDF antes
+  de escribir `## Cierre` y de marcar `closed`. Si el PDF no sale, el hallazgo sigue
+  como estaba. Al cerrar, pregunta en una sola pregunta el ambiente, la versión
+  publicada y la fecha de validación (opcionales; lo que falte sale como "—") y los
+  anota en `## Cierre`, para que redo pueda regenerar el mismo PDF.
+- **PDF de solución, siempre seis secciones**, con el orden y los títulos que pone
+  `scripts/generate_pdf.cjs`:
   1. Identificación del hallazgo: cuatro filas fijas, en este orden (App, Módulo,
      Objeto con su tipo, Ruta del objeto; sin ID). Categoría, patrón, fecha de
      análisis y estado van en la ficha de resumen del encabezado y no se repiten en
@@ -183,35 +201,47 @@ un resumen (bloque "Referencia rápida").
      conserva sus ocho etiquetas en inglés.
   2. Módulo afectado
   3. Causa identificada (si hay observaciones fuera del alcance, termina con una sola
-     línea que dice que se reportan por separado, sin detalle; en pasado solo en el
+     `note` con la frase fija de `PDF-FORMAT.md`, sin detalle; en pasado solo en el
      PDF final y si el usuario confirmó en close que ya las reportó, lo que queda
      anotado en `## Cierre`)
-  4. Solución aplicada ("Solución propuesta" mientras es borrador; con el recuadro
-     "Cambio de comportamiento" si `solution.md` lo tiene)
-  5. Evidencia de corrección
+  4. Solución aplicada ("Solución propuesta" mientras es borrador, con el `callout`
+     "Cambio de comportamiento · Requiere decisión funcional" si `solution.md` lo
+     tiene y la tabla de alternativas). Al cerrar se escribe según el estado: en
+     `fixed`, lo que se hizo, en pasado y con los pasos bajo "Cambios aplicados" (de
+     `implementation.md` o de lo que el usuario confirme; si se aplicó la propuesta,
+     sus pasos en pasado sin cambiar el contenido); en los demás, lo que define
+     `PDF-FORMAT.md`. En un cierre el recuadro se titula solo "Cambio de
+     comportamiento" y dice el cambio que quedó aplicado; close pregunta quién tomó
+     la decisión y lo anota en `## Cierre`, no en el PDF. En ningún cierre va la
+     tabla de alternativas
+  5. Evidencia de corrección (en borrador, una figura sin `file` y con `expect` por
+     cada captura prevista; al cerrar, una por imagen de `evidence/`, con `kind`
+     según el nombre del archivo y cada `antes` seguido de su `despues`; si el nombre
+     no deja claro el tipo, el comando pregunta)
   6. Estado final de la atención (si el hallazgo estaba `implemented` y se cierra sin
      `Fixed`, lleva una fila con el estado del cambio hecho por `/am:fix`: revertido,
      solo con confirmación del usuario, o sigue en OutSystems)
 
-  Lo que cambia según el estado (borrador, Fixed, Already fixed, False positive,
-  Won't fix) está en la tabla "Qué cambia según el estado" de `TEMPLATE.md`; review,
-  redo y close la aplican tal cual. Los saltos de página los resuelve `finding.css`.
-  Los identificadores van en `<code>` y no se parten al final de la línea; los largos
-  llevan `<code class="wrap">` y `<wbr>` después de cada separador, así que solo se
-  parten en un separador y nunca dentro de un nombre (salvo un nombre que por sí solo
-  no cabe en el renglón). El título del documento va en la fuente normal de los
-  títulos.
-- **Plantilla fija, sin estilos propios:** `solution.html` y el `.html` del resumen
-  solo llevan los campos del esqueleto y los componentes del catálogo de
-  `TEMPLATE.md`: nada de `style="..."`, clases nuevas ni otro `<style>`. Sin marca ni
-  logo: el color, el encabezado y el pie están fijos en `finding.css`. No hay archivo
-  de configuración por proyecto y no se agrega ninguno. Los comandos nunca editan la
-  copia de `reports/_template/`; `finding.css` solo cambia en este repo, por decisión
-  del usuario y subiendo la versión de la plantilla.
-- **Verificación del PDF:** después de imprimir, todo comando comprueba que el PDF
-  existe y es de esa ejecución, que tiene todas sus secciones, que las imágenes
-  cargaron y que el texto se puede extraer. El resultado se comprueba en el archivo,
-  no en la salida del navegador.
+  Lo que cambia según el estado está en la tabla "Qué va en cada estado" de
+  `PDF-FORMAT.md`; review, redo y close la aplican tal cual. `affected` y
+  `cause` se arman con el contenido de `solution.md`; al regenerar en close o en un
+  redo de solo redacción, ese texto se copia tal cual, sin redactarlo de nuevo. La
+  regla de copiar no aplica a `solution`, que se escribe según el estado (punto 4). Los
+  saltos de página, el corte de los identificadores largos y la fuente del título los
+  resuelve el script. Los fragmentos de código no van al PDF, y el diagrama `flow`
+  solo si el análisis tiene una secuencia clara de 3 a 5 pasos.
+- **Script fijo, sin diseño propio:** los comandos nunca editan `generate_pdf.cjs`,
+  `pdfkit.bundle.cjs` ni `PDF-FORMAT.md`, no los copian al proyecto y no generan un
+  script propio: solo escriben `reports/_print.json` y ejecutan el del plugin. Si un
+  PDF no sale bien, se corrigen los datos. Sin marca ni logo: el color, el encabezado
+  y el pie están fijos en el script. No hay archivo de configuración por proyecto y
+  no se agrega ninguno. Un cambio de diseño se hace solo en `generate_pdf.cjs`, en
+  este repo, por decisión del usuario y subiendo su número de versión (y el de
+  `PDF-FORMAT.md` si cambia el formato de los datos).
+- **Verificación del PDF:** después de generar, todo comando comprueba que el PDF
+  existe y que su fecha es de esa ejecución, y lo lee para confirmar que tiene todas
+  sus secciones y las figuras esperadas. El resultado se comprueba en el archivo, no
+  solo en el código de salida. Sin esa comprobación el PDF no se da por terminado.
 - **El PDF nunca afirma más que `solution.md`:** si la guía dice "No verificado" o
   "probable", el PDF usa la misma cautela (review, redo, close). "Consultar antes de
   implementar" y "Hallazgos relacionados" no van en el PDF.
@@ -236,9 +266,10 @@ un resumen (bloque "Referencia rápida").
 5. Validar que `marketplace.json` y `plugin.json` siguen siendo JSON válido, y que el
    diagrama Mermaid del README sigue siendo válido (los `:` dentro de una etiqueta se
    escriben `#58;`).
-   Si cambia algo de `plugins/am/templates/`, imprimir un PDF de prueba con datos
-   genéricos fuera del repo (borrador, final y resumen) y revisarlo; `finding.css` no
-   se toca sin consultarlo antes con el usuario.
+   Si cambia algo de `plugins/am/scripts/`, generar los PDF de prueba con datos
+   genéricos fuera del repo (los cinco estados y el resumen), llamando al script por
+   su ruta dentro del repo, y revisarlos; ningún archivo de `scripts/` se toca sin
+   consultarlo antes con el usuario.
 6. Mostrar el diff resumido.
 7. **Nunca ejecutar `git commit` ni `git push`, ni siquiera si el usuario lo pide.** El
    usuario hace los commits. Al terminar cada cambio, proponer un mensaje en formato

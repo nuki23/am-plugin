@@ -13,8 +13,7 @@ estado del hallazgo en AI Mentor: eso lo hace el usuario.
 
 Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
 dato personal; solo el nombre y la ruta del elemento. Esto incluye las justificaciones y
-la descripción de la evidencia. El ID es interno: no va en el PDF, en `solution.html`
-ni en `solution.md`.
+la descripción de la evidencia. El ID es interno: no va en el PDF ni en `solution.md`.
 
 ## Referencia rápida
 
@@ -41,24 +40,39 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
-  está en la misma carpeta.
-- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
-  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
-  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
-  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
-  `reports/_template/` si no están o si su versión (primer comentario de
-  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
-- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
-  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
-  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
-  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
-  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
-  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
-  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
-  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
-  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
-  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
+  `<Parent> › <Object Name>`. No lleva el ID.
+- **Script de PDF:** el diseño es fijo y viene con el plugin, en
+  `${CLAUDE_PLUGIN_ROOT}/scripts/`: `generate_pdf.cjs` (el generador),
+  `pdfkit.bundle.cjs` (la librería, ya incluida) y `PDF-FORMAT.md` (el formato de los
+  datos; se lee completo antes de escribirlos). Si esa ruta no existe, se busca
+  `scripts/` en la versión más alta de `~/.claude/plugins/cache/nuki23/am/`; si tampoco
+  está, el comando se detiene y pide actualizar el plugin. El script no se copia al
+  proyecto, nunca se edita y no se genera uno propio. Solo requiere Node (se comprueba
+  con `node --version`); no se usa npm ni se instala nada. No hay configuración por
+  proyecto.
+- **Generar un PDF:** se escriben los datos en `reports/_print.json` (UTF-8) siguiendo
+  `PDF-FORMAT.md` al pie de la letra y se ejecuta
+  `node "${CLAUDE_PLUGIN_ROOT}/scripts/generate_pdf.cjs" "reports/_print.json" "<salida>.pdf"`.
+  `_print.json` es un único archivo temporal: se sobrescribe en cada impresión, no se
+  borra después y no se crea uno por hallazgo. Código de salida: 0, correcto; 3, se
+  generó pero faltó una imagen (se corrige la ruta y se repite); 1, no se pudo escribir
+  (suele ser el PDF abierto en un visor: se avisa y se pide cerrarlo); 2, datos no
+  válidos (se corrige `_print.json` con lo que lista el script y se repite); 4, error
+  inesperado (se muestra el mensaje y el comando se detiene). Después se comprueba el
+  archivo: existe, su fecha es de esta ejecución y, al leerlo, están todas sus
+  secciones y las figuras esperadas. Sin Node, o si el PDF no sale, se avisa que queda
+  pendiente y el hallazgo no se marca `closed`.
+- **Texto del PDF:** `affected` y `cause` (secciones 2 y 3) se arman con el contenido
+  de `solution.md`; al regenerar en close o en un redo de solo redacción se copian tal
+  cual, sin redactarlos de nuevo. `solution` (sección 4) se escribe según el estado: en
+  `draft`, la propuesta con sus pasos y la tabla de alternativas; en `fixed`, lo que
+  se hizo, en pasado y bajo el subtítulo "Cambios aplicados"; en los demás cierres,
+  lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
+  recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
+  que algo se hizo o se validó sin confirmación del usuario.
+- **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
+  `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
+  actualizan y no se borran.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
 
 ## Pasos
@@ -95,6 +109,11 @@ completa es `/am:review`.
    - Fuente de la sección 4: si existe `implementation.md`, úsalo (cambios realmente
      aplicados y desviaciones). Si no existe, pregunta si la solución aplicada fue la
      propuesta o cambió; si cambió, actualiza `solution.md` con lo que realmente se hizo.
+     La sección solo describe como hecho lo que diga `implementation.md` o lo que el
+     usuario confirme aquí.
+   - Si `solution.md` tiene `## Cambio de comportamiento` y el cambio aplicado lo
+     conserva, pregunta quién tomó la decisión funcional. La respuesta se anota en
+     `## Cierre`; no va en el PDF.
 6. **Already fixed:**
    - Revisa `evidence/`. Si no tiene imágenes (por ejemplo, el código actual y AI
      Mentor), avisa y no generes el PDF final.
@@ -107,88 +126,120 @@ completa es `/am:review`.
    separado. No las reportas tú, y la respuesta no impide cerrar. Guárdala para
    `## Cierre` y para la sección 3 del PDF.
 9. **Comprueba que se puede generar el PDF** antes de escribir nada del cierre (ver
-   "Plantilla de PDF" y "Generar un PDF" en "Referencia rápida"):
-   - Lee `TEMPLATE.md` completo y comprueba la copia de `reports/_template/` (cópiala o
-     reemplázala si falta o su versión es menor).
-   - Busca Edge o Chrome por su ruta completa.
+   "Script de PDF" y "Generar un PDF" en "Referencia rápida"):
+   - Comprueba que hay Node con `node --version`.
+   - Ubica el script del plugin y lee `PDF-FORMAT.md` completo.
 
-   Si no hay plantilla, detente y pide actualizar el plugin. Si no hay navegador,
-   sigue con el paso 10 solo hasta escribir `solution.html` y luego detente: no
-   escribas `## Cierre`, no marques el hallazgo `closed`, avisa que el cierre queda
-   pendiente por el PDF y que basta repetir `/am:close` cuando haya Edge o Chrome.
-10. Escribe `solution.html` de nuevo a partir de `reports/_template/finding.html`
-    (no edites el anterior), en versión final, e imprime el PDF reutilizando el nombre
-    del `.pdf` que ya está en la carpeta. Sin estilos propios: solo los campos y los
-    componentes del catálogo de `TEMPLATE.md`. Lo que cambia según la decisión sale de
-    la tabla "Qué cambia según el estado" de `TEMPLATE.md`:
+   Si no hay Node, detente: no escribas `## Cierre`, no marques el hallazgo `closed`,
+   no instales nada, avisa que el cierre queda pendiente porque falta Node y que basta
+   repetir `/am:close` cuando lo haya. Si no está el script, detente y pide actualizar
+   el plugin.
+10. **Evidencia.** Si el PDF va a llevar imágenes (siempre en Fixed y Already fixed;
+    en False positive y Won't fix, solo si las hay en `evidence/`):
+    - Una figura por imagen de `evidence/`, con `file` = `evidence/<archivo>` y un
+      `caption` que la describa.
+    - `kind` según el nombre del archivo: `antes` si dice "antes", `despues` si dice
+      "despues" o "después"; las de validación (Network, AI Mentor y similares),
+      `validacion`. Si un nombre no deja claro el tipo, pregunta al usuario; no lo
+      adivines.
+    - Ordena las figuras para que cada `antes` quede seguido de su `despues` (el
+      script los dibuja lado a lado); las de validación y las que sobren van después.
+    - El script solo admite PNG y JPG. Si hay una imagen en otro formato (webp, gif),
+      avisa y pide convertirla a PNG o JPG antes de cerrar; no instales nada.
+    - Pregunta, en una sola pregunta, el ambiente, la versión publicada y la fecha de
+      validación. Son opcionales: lo que el usuario no responda se omite de los datos
+      y el script lo muestra como "—". No los deduzcas.
+11. Escribe `reports/_print.json` de nuevo (se sobrescribe) y genera el PDF final con
+    el script, reutilizando el nombre del `.pdf` que ya está en la carpeta. `baseDir`
+    es la carpeta del hallazgo. Sigue `PDF-FORMAT.md` al pie de la letra:
 
     | Campo | Fixed | Already fixed | False positive | Won't fix |
     |---|---|---|---|---|
-    | `{{ETIQUETA_ESTADO}}` | Fixed | Already fixed | False positive | Won't fix |
-    | `{{ESTADO_BADGE}}` | `badge-dark` con el estado | igual | igual | igual |
-    | `{{TITULO_SOLUCION}}` | Solución aplicada | Solución aplicada | Solución aplicada | Solución aplicada |
-    | `{{SOLUCION}}` | Lo realmente hecho | "No se requirió corrección: el problema ya no existe en el código", con lo verificado | "No se aplica corrección", con por qué el patrón no aplica | "No se aplica corrección.", seguido de la solución que se había propuesto |
-    | `{{CLASE_EVIDENCIA}}` | `page-break` | `page-break` | vacío | vacío |
-    | `{{EVIDENCIA}}` | Capturas | Capturas | Justificación (y capturas si hay) | Justificación (y capturas si hay) |
-    | `{{ESTADO_FINAL}}` | Fila de estado y tabla | igual | igual, con justificación y quién aprobó | igual, con justificación y quién aprobó |
+    | `state` | `fixed` | `already-fixed` | `false-positive` | `wont-fix` |
+    | `solution` | Lo que se hizo, en pasado, con los pasos bajo el subtítulo "Cambios aplicados" | "No se requirió corrección: el problema ya no existe en el código", con lo verificado | "No se aplica corrección", con por qué el patrón no aplica | "No se aplica corrección.", seguido de la solución que se había propuesto |
+    | `evidence.figures` | Las del paso 10 | Las del paso 10 | Solo si hay imágenes | Solo si hay imágenes |
+    | `evidence.text` | — | — | La justificación | La justificación |
+    | `final` | `closedOn` | `closedOn`, `verified` | `closedOn`, `justification`, `approvedBy` | `closedOn`, `justification`, `approvedBy` |
+
+    El script pone solo la etiqueta del encabezado, el estado de la ficha, el título
+    de la sección 4 ("Solución aplicada") y el contenido fijo de la sección 6: no los
+    escribas tú.
 
     Contenido:
+    - `affected` y `cause` (secciones 2 y 3) se arman con el contenido de
+      `solution.md`. Copia el texto tal cual, sin redactarlo de nuevo, para que el
+      PDF final diga lo mismo que el borrador. La correspondencia con los bloques es
+      la de `/am:review`: listas con viñetas en `list`, y los fragmentos de código no
+      van al PDF.
+    - `solution` (sección 4) no se copia del borrador: se escribe según el estado.
+      - **Fixed:** describe lo que se hizo, en pasado ("Se creó…", "Se eliminó…"), a
+        partir de `implementation.md` si existe o de lo que el usuario confirmó en
+        el paso 5. Si la solución aplicada fue la propuesta, convierte los pasos de
+        `solution.md` a pasado sin cambiar su contenido: mismos pasos, mismos
+        elementos, mismo orden. Los pasos van en `steps` bajo un `h` "Cambios
+        aplicados". No describas como hecho nada que esas fuentes no digan.
+      - **Already fixed, False positive y Won't fix:** lo que indica la tabla, como
+        lo define `PDF-FORMAT.md`. En Won't fix, la solución que se había propuesto
+        sigue descrita como propuesta, no como hecha.
+      - En ningún cierre va la tabla de alternativas.
     - El PDF nunca afirma algo con más certeza que sus fuentes (`solution.md`,
       `implementation.md` y lo que el usuario confirmó en este cierre): si allí dice
       "No verificado" o "probable", el PDF usa la misma cautela. "Consultar antes de
       implementar" y "Hallazgos relacionados" no van en el PDF. Tampoco el ID ni el
-      valor de un secreto o dato personal.
-    - Título `<Parent> › <Object Name>`, en la fuente normal de los títulos. Sección 1
-      con sus cuatro filas (App, Módulo, Objeto con su tipo y Ruta del objeto);
-      categoría, patrón y fecha de análisis van en la ficha del encabezado y no se
-      repiten en la tabla. Si no se conoce el tipo de un tramo de la ruta, se omite.
-    - Sección 3, "Causa identificada": si `solution.md` tiene
-      `## Observaciones fuera del alcance`, termina con una sola línea en una nota
-      (`note`), sin detalle. Solo si el usuario confirmó en el paso 8 que ya las
-      reportó, va en pasado: "Durante el análisis se identificaron observaciones
-      fuera del alcance de este hallazgo; se reportaron por separado." En cualquier
-      otro caso (no las ha reportado, no sabe o no respondió), queda como en el
-      borrador: "...; se reportan por separado."
-    - Los identificadores (clases CSS, nombres de acciones, rutas) van en `<code>`,
-      cada uno en el suyo, también en las justificaciones y en la descripción de la
-      evidencia. Los largos llevan `<code class="wrap">` y `<wbr>` después de cada
-      separador, para que no se partan dentro de un nombre.
-    - Sección 4 "Solución aplicada", sin la tabla de alternativas (solo va en
-      borrador). Si `solution.md` tiene `## Cambio de comportamiento` y la sección
-      describe esa solución (Fixed con la solución propuesta, o Won't fix), incluye
-      el recuadro "Cambio de comportamiento" que lo dice explícitamente; en Fixed,
-      solo si el cambio aplicado lo conserva.
-    - Sección 5: las imágenes de `evidence/`, referenciadas con ruta relativa
-      (`evidence/<archivo>`), cada una con un pie que la describa. Las de antes y
-      después van en pares; las de validación y las que sobren, a ancho completo.
-      Para False positive y Won't fix, la justificación escrita (y las imágenes, si
-      hay).
-    - Sección 6: la fila de estado y la tabla con estado final y fecha de cierre; para
-      False positive y Won't fix, además la justificación resumida y quién la aprobó.
-      Si aplicó el paso 4, agrega la fila "Cambio de /am:fix": "revertido" solo si el
+      valor de un secreto o dato personal, en ningún texto.
+    - Identificación: `app`, `module`, `category`, `pattern`, `objectName`,
+      `objectType`, `analysisDate`, `parent` y `path`, de `solution.md`. Si no se
+      conoce el tipo de un tramo de la ruta, se omite su `type`.
+    - Fechas (`analysisDate`, `closedOn`, `validatedOn`) en formato `12 nov 2026`.
+    - `cause`: si `solution.md` tiene `## Observaciones fuera del alcance`, termina
+      con una sola `note`, con la frase fija de `PDF-FORMAT.md`, sin detalle. Solo si
+      el usuario confirmó en el paso 8 que ya las reportó, va la frase en pasado
+      ("...; se reportaron por separado."). En cualquier otro caso (no las ha
+      reportado, no sabe o no respondió), queda como en el borrador ("...; se reportan
+      por separado.").
+    - Los identificadores (clases CSS, nombres de acciones, rutas) van entre comillas
+      invertidas, cada uno entre las suyas, también en las justificaciones y en los
+      pies de las figuras.
+    - Recuadro de cambio de comportamiento: si `solution.md` tiene
+      `## Cambio de comportamiento` y la sección 4 describe esa solución, `solution`
+      lleva un `callout` titulado solo "Cambio de comportamiento", sin "Requiere
+      decisión funcional". En Fixed va solo si el cambio aplicado lo conserva, y dice
+      el cambio que quedó aplicado; en Won't fix, el que habría tenido la solución
+      propuesta, sin darlo por aplicado. Quién tomó la decisión no va en el PDF.
+    - `final`: `closedOn` es la fecha de hoy; `verified` (Already fixed) es la línea
+      del paso 6; `justification` y `approvedBy` (False positive, Won't fix) son los
+      del paso 7. Si aplicó el paso 4, agrega `fixChange`: "revertido" solo si el
       usuario confirmó que ya se revirtió; en cualquier otro caso (se conserva o se
       va a revertir después), "sigue en OutSystems".
 
-    Después de imprimir, lee el PDF y comprueba que existe y es de esta ejecución,
-    que tiene las seis secciones, que las imágenes cargaron (cada figura muestra su
-    captura) y que el texto se puede extraer. Si algo falla, corrige `solution.html`
-    e imprime de nuevo.
+    Ejecuta el script e interpreta el código de salida: 0, correcto; 3, faltó una
+    imagen (corrige la ruta y repite); 1, no se pudo escribir (suele ser el PDF
+    abierto en un visor: avisa y pide cerrarlo); 2, datos no válidos (corrige
+    `_print.json` con lo que lista y repite); 4, error inesperado (muestra el mensaje
+    y detente).
 
-    Si el PDF no se pudo generar o no pasa la comprobación, deja `solution.html`, no
-    escribas `## Cierre`, no marques el hallazgo `closed`, avisa y pregunta cómo
-    seguir.
-11. Con el PDF comprobado, agrega (o reemplaza, si ya existe) al final de
+    Después, lee el PDF y comprueba que existe, que su fecha es de esta ejecución,
+    que tiene las seis secciones y que están las figuras esperadas, cada una con su
+    captura. Si algo falla, corrige `_print.json` y ejecuta de nuevo.
+
+    Si el PDF no se pudo generar o no pasa la comprobación, no escribas `## Cierre`,
+    no marques el hallazgo `closed`, avisa y pregunta cómo seguir.
+12. Con el PDF comprobado, agrega (o reemplaza, si ya existe) al final de
     `solution.md` (después de `## Observaciones fuera del alcance`, si existe) una
     sección `## Cierre` con: estado final, fecha y, según el caso, lo verificado
     (Already fixed) o la justificación y quién la aprobó (False positive, Won't fix).
+    Anota también el ambiente, la versión publicada y la fecha de validación que el
+    usuario haya dado en el paso 10, para que `/am:redo` pueda regenerar el mismo PDF.
+    Si aplicó la pregunta del paso 5, anota quién tomó la decisión funcional, tal
+    como lo dijo el usuario; si no respondió, anota que no se indicó.
     Si aplicó el paso 4, anota también la respuesta sobre el cambio de `/am:fix` (se
     va a revertir, ya se revirtió o se conserva) tal como la dio el usuario; no
     afirmes que se revirtió sin su confirmación. Si aplicó el paso 8, anota si las
     observaciones fuera del alcance ya se reportaron por separado (confirmado por el
     usuario) o siguen por reportar. Debe decir lo mismo que el PDF.
-12. Actualiza la fila en `_progress.md`: `Doc status` = `closed`, `Final status` = la
+13. Actualiza la fila en `_progress.md`: `Doc status` = `closed`, `Final status` = la
     decisión, `Updated` = hoy.
-13. Reporta la ruta del PDF y cuántos hallazgos quedan en `draft`, `implemented` y
+14. Reporta la ruta del PDF y cuántos hallazgos quedan en `draft`, `implemented` y
     `pending`. Recuerda que el estado en AI Mentor lo cambia el usuario.
 
 No afirmes que la corrección fue validada en AI Mentor salvo que el usuario lo diga o

@@ -42,24 +42,39 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
-  está en la misma carpeta.
-- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
-  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
-  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
-  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
-  `reports/_template/` si no están o si su versión (primer comentario de
-  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
-- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
-  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
-  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
-  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
-  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
-  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
-  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
-  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
-  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
-  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
+  `<Parent> › <Object Name>`. No lleva el ID.
+- **Script de PDF:** el diseño es fijo y viene con el plugin, en
+  `${CLAUDE_PLUGIN_ROOT}/scripts/`: `generate_pdf.cjs` (el generador),
+  `pdfkit.bundle.cjs` (la librería, ya incluida) y `PDF-FORMAT.md` (el formato de los
+  datos; se lee completo antes de escribirlos). Si esa ruta no existe, se busca
+  `scripts/` en la versión más alta de `~/.claude/plugins/cache/nuki23/am/`; si tampoco
+  está, el comando se detiene y pide actualizar el plugin. El script no se copia al
+  proyecto, nunca se edita y no se genera uno propio. Solo requiere Node (se comprueba
+  con `node --version`); no se usa npm ni se instala nada. No hay configuración por
+  proyecto.
+- **Generar un PDF:** se escriben los datos en `reports/_print.json` (UTF-8) siguiendo
+  `PDF-FORMAT.md` al pie de la letra y se ejecuta
+  `node "${CLAUDE_PLUGIN_ROOT}/scripts/generate_pdf.cjs" "reports/_print.json" "<salida>.pdf"`.
+  `_print.json` es un único archivo temporal: se sobrescribe en cada impresión, no se
+  borra después y no se crea uno por hallazgo. Código de salida: 0, correcto; 3, se
+  generó pero faltó una imagen (se corrige la ruta y se repite); 1, no se pudo escribir
+  (suele ser el PDF abierto en un visor: se avisa y se pide cerrarlo); 2, datos no
+  válidos (se corrige `_print.json` con lo que lista el script y se repite); 4, error
+  inesperado (se muestra el mensaje y el comando se detiene). Después se comprueba el
+  archivo: existe, su fecha es de esta ejecución y, al leerlo, están todas sus
+  secciones y las figuras esperadas. Sin Node, o si el PDF no sale, se avisa que queda
+  pendiente y el hallazgo no se marca `closed`.
+- **Texto del PDF:** `affected` y `cause` (secciones 2 y 3) se arman con el contenido
+  de `solution.md`; al regenerar en close o en un redo de solo redacción se copian tal
+  cual, sin redactarlos de nuevo. `solution` (sección 4) se escribe según el estado: en
+  `draft`, la propuesta con sus pasos y la tabla de alternativas; en `fixed`, lo que
+  se hizo, en pasado y bajo el subtítulo "Cambios aplicados"; en los demás cierres,
+  lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
+  recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
+  que algo se hizo o se validó sin confirmación del usuario.
+- **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
+  `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
+  actualizan y no se borran.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
 
 ## Paso 1 — Comprobaciones (si alguna falla, detente)
@@ -86,7 +101,7 @@ completa es `/am:review`.
 5. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
    en esta sesión. Si ninguna permite editar y publicar, dilo así: "Esta conexión a
    OutSystems es solo lectura; aplica `solution.md` a mano y luego usa `/am:close`", y
-   termina. No busques rutas alternas (automatizar el navegador, APIs no documentadas,
+   termina. No busques rutas alternas (automatizar la interfaz, APIs no documentadas,
    scripts propios).
 6. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
    determinarlo, pregunta. Nunca modifiques QA, Preproducción ni Producción, y nunca

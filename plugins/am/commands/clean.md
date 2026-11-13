@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 Alcance recibido: `$ARGUMENTS`
 
-Limpia `reports/` archivando, nunca borrando. No consulta ni modifica OutSystems, y no
-toca `scripts/`.
+Limpia `reports/` archivando, nunca borrando. No consulta ni modifica OutSystems, y
+solo trabaja dentro de `reports/`.
 
 Nunca copies a un `.md`, a un PDF ni al chat el valor de un secreto, credencial, token o
 dato personal; solo el nombre y la ruta del elemento.
@@ -39,24 +39,39 @@ completa es `/am:review`.
   es el elemento padre en `Object Path` (se omite si no hay o es el módulo); único en
   `reports/` (sin contar `_archive/`; sufijo `-2`, `-3` si choca). Al regenerarlo se
   reutiliza el nombre del `.pdf` que ya está en la carpeta. Título:
-  `<Parent> › <Object Name>`. No lleva el ID. Sale de imprimir `solution.html`, que
-  está en la misma carpeta.
-- **Plantilla de PDF:** no hay script de PDF ni configuración por proyecto, y no se
-  crea ninguno. La plantilla es fija y está en `${CLAUDE_PLUGIN_ROOT}/templates/`:
-  `TEMPLATE.md` (reglas, campos y catálogo de componentes; se lee ahí, no se copia),
-  `finding.css`, `finding.html` y `summary.html`. Estos tres se copian a
-  `reports/_template/` si no están o si su versión (primer comentario de
-  `finding.css`, "versión N") es menor que la del plugin; la copia nunca se edita.
-- **Generar un PDF:** se escribe el `.html` (`solution.html` en la carpeta del
-  hallazgo, desde `finding.html`; `summary-<AAAA-MM-DD>.html` en `_summaries/`, desde
-  `summary.html`) siguiendo `TEMPLATE.md` al pie de la letra: solo sus campos y los
-  componentes del catálogo, sin estilos propios. Se imprime con Edge o Chrome por su
-  ruta completa (en Windows: Edge en `Program Files`, luego en `Program Files (x86)`,
-  luego Chrome): `"<navegador>" --headless --disable-gpu --no-pdf-header-footer
-  --print-to-pdf="<salida>.pdf" "file:///<ruta>/<archivo>.html"`. Después se
-  comprueba que el PDF existe y es de esta ejecución, que tiene todas sus secciones,
-  que las imágenes cargaron y que el texto se puede extraer. Sin navegador, o si la
-  impresión falla, se deja el `.html`, se avisa y el hallazgo no se marca `closed`.
+  `<Parent> › <Object Name>`. No lleva el ID.
+- **Script de PDF:** el diseño es fijo y viene con el plugin, en
+  `${CLAUDE_PLUGIN_ROOT}/scripts/`: `generate_pdf.cjs` (el generador),
+  `pdfkit.bundle.cjs` (la librería, ya incluida) y `PDF-FORMAT.md` (el formato de los
+  datos; se lee completo antes de escribirlos). Si esa ruta no existe, se busca
+  `scripts/` en la versión más alta de `~/.claude/plugins/cache/nuki23/am/`; si tampoco
+  está, el comando se detiene y pide actualizar el plugin. El script no se copia al
+  proyecto, nunca se edita y no se genera uno propio. Solo requiere Node (se comprueba
+  con `node --version`); no se usa npm ni se instala nada. No hay configuración por
+  proyecto.
+- **Generar un PDF:** se escriben los datos en `reports/_print.json` (UTF-8) siguiendo
+  `PDF-FORMAT.md` al pie de la letra y se ejecuta
+  `node "${CLAUDE_PLUGIN_ROOT}/scripts/generate_pdf.cjs" "reports/_print.json" "<salida>.pdf"`.
+  `_print.json` es un único archivo temporal: se sobrescribe en cada impresión, no se
+  borra después y no se crea uno por hallazgo. Código de salida: 0, correcto; 3, se
+  generó pero faltó una imagen (se corrige la ruta y se repite); 1, no se pudo escribir
+  (suele ser el PDF abierto en un visor: se avisa y se pide cerrarlo); 2, datos no
+  válidos (se corrige `_print.json` con lo que lista el script y se repite); 4, error
+  inesperado (se muestra el mensaje y el comando se detiene). Después se comprueba el
+  archivo: existe, su fecha es de esta ejecución y, al leerlo, están todas sus
+  secciones y las figuras esperadas. Sin Node, o si el PDF no sale, se avisa que queda
+  pendiente y el hallazgo no se marca `closed`.
+- **Texto del PDF:** `affected` y `cause` (secciones 2 y 3) se arman con el contenido
+  de `solution.md`; al regenerar en close o en un redo de solo redacción se copian tal
+  cual, sin redactarlos de nuevo. `solution` (sección 4) se escribe según el estado: en
+  `draft`, la propuesta con sus pasos y la tabla de alternativas; en `fixed`, lo que
+  se hizo, en pasado y bajo el subtítulo "Cambios aplicados"; en los demás cierres,
+  lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
+  recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
+  que algo se hizo o se validó sin confirmación del usuario.
+- **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
+  `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
+  actualizan y no se borran.
 - `reports/_archive/` lo gestiona `/am:clean`; los demás comandos lo ignoran.
 
 ## Reglas
@@ -69,11 +84,10 @@ completa es `/am:review`.
    se van a mover y a dónde, y espera un sí explícito. Sin sí, no hagas nada.
 4. Dentro del archivo conserva la estructura: una carpeta `reports/<Module>/<Folder>/`
    pasa a `_archive/<fecha>/<Module>/<Folder>/`.
-   - `reports/_template/` es la copia de la plantilla de PDF, no un hallazgo: nunca se
-     edita. Con `drafts` se queda en su sitio y además se **copia** a
-     `_archive/<fecha>/_template/`, para que los `solution.html` archivados sigan
-     encontrando su hoja de estilos. Con `all` se mueve con todo lo demás;
-     `/am:review` la vuelve a copiar del plugin cuando haga falta.
+   - `reports/_print.json` (los datos de la última impresión de PDF) no es un
+     hallazgo: nunca se archiva ni se mueve, con ningún alcance.
+   - Una carpeta de hallazgo se mueve entera, con todo lo que tenga dentro, también
+     los archivos que hayan dejado versiones anteriores del plugin.
 5. **`Last` nunca baja.** Al quitar filas de `Findings` no cambies la columna `Last` ni
    quites filas de la sección `Prefixes`: así `/am:review` no vuelve a asignar un ID
    archivado.
@@ -86,12 +100,13 @@ completa es `/am:review`.
 - **`pending`:** quita las filas `pending` de `_progress.md` (no tienen carpeta) y las
   archiva en `_progress-removed.md`.
 - **`drafts`:** mueve las carpetas de los hallazgos `draft` al archivo (con su
-  `solution.md`, `solution.html`, PDF y `evidence/`) y quita sus filas (archivadas en
+  `solution.md`, PDF y `evidence/`) y quita sus filas (archivadas en
   `_progress-removed.md`). Los `implemented` no se tocan con este
   alcance: si hay alguno, avisa que su cambio ya está en OutSystems y que se cierran con
   `/am:close`.
-- **`all`:** mueve todo el contenido de `reports/` (menos `_archive/`) a
-  `_archive/<fecha>/`, incluidos `_progress.md`, `_summaries/` y `_template/`. Luego crea un
+- **`all`:** mueve todo el contenido de `reports/` a `_archive/<fecha>/`, incluidos
+  `_progress.md`, `_summaries/` y lo que hayan dejado versiones anteriores del plugin.
+  En `reports/` quedan solo `_archive/` y `_print.json`. Luego crea un
   `_progress.md` nuevo con el título, la sección `Prefixes` copiada tal cual (con sus
   valores de `Last`) y la tabla `Findings` solo con el encabezado, y deja el proyecto
   listo para un Excel nuevo con `/am:review <excel>`. Si hay `implemented`, avisa que
