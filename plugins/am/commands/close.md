@@ -70,6 +70,14 @@ completa es `/am:review`.
   lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
   recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
   que algo se hizo o se validó sin confirmación del usuario.
+- **Buenas prácticas:** las reglas están en
+  `${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, la única fuente; si esa ruta no
+  existe, se busca `rules/` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/` y, si tampoco está, el comando que las necesita
+  se detiene y pide actualizar el plugin. No se copia al proyecto ni se edita. Sus
+  códigos (`DOC-3`, `PERF-7`…) se citan en `solution.md` solo en el apartado
+  `## Buenas prácticas aplicadas`, y pueden aparecer en el chat y en el plan de
+  `/am:fix`; nunca en los pasos manuales, en `implementation.md` ni en el PDF.
 - **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
   `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
   actualizan y no se borran.
@@ -114,6 +122,13 @@ completa es `/am:review`.
    - Si `solution.md` tiene `## Cambio de comportamiento` y el cambio aplicado lo
      conserva, pregunta quién tomó la decisión funcional. La respuesta se anota en
      `## Cierre`; no va en el PDF.
+   - **Warnings.** Pregunta si el módulo quedó sin warnings nuevos después del
+     cambio. Si el usuario responde que quedaron warnings nuevos, o que no lo sabe,
+     recuérdale que la regla `DOC-10` de buenas prácticas pide que el cambio no deje
+     warnings nuevos y pregunta si quiere cerrar como `Fixed` de todos modos. Solo con
+     un sí explícito sigues; sin ese sí, no cierres y termina sin cambiar nada. No des
+     por comprobado lo que el usuario no sabe. La respuesta se anota en `## Cierre`;
+     no va en el PDF.
 6. **Already fixed:**
    - Revisa `evidence/`. Si no tiene imágenes (por ejemplo, el código actual y AI
      Mentor), avisa y no generes el PDF final.
@@ -185,8 +200,9 @@ completa es `/am:review`.
     - El PDF nunca afirma algo con más certeza que sus fuentes (`solution.md`,
       `implementation.md` y lo que el usuario confirmó en este cierre): si allí dice
       "No verificado" o "probable", el PDF usa la misma cautela. "Consultar antes de
-      implementar" y "Hallazgos relacionados" no van en el PDF. Tampoco el ID ni el
-      valor de un secreto o dato personal, en ningún texto.
+      implementar", "Hallazgos relacionados" y "Buenas prácticas aplicadas" no van en
+      el PDF. Tampoco el ID, un código de regla (`DOC-3`, `PERF-7`…) ni el valor de un
+      secreto o dato personal, en ningún texto.
     - Identificación: `app`, `module`, `category`, `pattern`, `objectName`,
       `objectType`, `analysisDate`, `parent` y `path`, de `solution.md`. Si no se
       conoce el tipo de un tramo de la ruta, se omite su `type`.
@@ -231,7 +247,11 @@ completa es `/am:review`.
     Anota también el ambiente, la versión publicada y la fecha de validación que el
     usuario haya dado en el paso 10, para que `/am:redo` pueda regenerar el mismo PDF.
     Si aplicó la pregunta del paso 5, anota quién tomó la decisión funcional, tal
-    como lo dijo el usuario; si no respondió, anota que no se indicó.
+    como lo dijo el usuario; si no respondió, anota que no se indicó. En `Fixed`,
+    anota también la respuesta sobre warnings del paso 5: "warnings: sin warnings
+    nuevos", "warnings: quedaron warnings nuevos; el usuario confirmó cerrar de todos
+    modos" o "warnings: no verificado" (el usuario no lo sabía y confirmó cerrar de
+    todos modos).
     Si aplicó el paso 4, anota también la respuesta sobre el cambio de `/am:fix` (se
     va a revertir, ya se revirtió o se conserva) tal como la dio el usuario; no
     afirmes que se revirtió sin su confirmación. Si aplicó el paso 8, anota si las

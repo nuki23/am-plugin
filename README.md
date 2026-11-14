@@ -6,12 +6,12 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.5.0-2563eb)
+![versión](https://img.shields.io/badge/versión-0.6.0-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
 
-[Instalación](#instalación) · [Inicio rápido](#inicio-rápido) · [Comandos](#comandos) · [Flujo](#flujo-de-trabajo) · [Salida](#qué-genera)
+[Instalación](#instalación) · [Inicio rápido](#inicio-rápido) · [Comandos](#comandos) · [Flujo](#flujo-de-trabajo) · [Salida](#qué-genera) · [Buenas prácticas](#buenas-prácticas)
 
 </div>
 
@@ -23,6 +23,7 @@ AI Mentor exporta un Excel con los hallazgos de deuda técnica. `am` lo recorre 
 
 - lee el elemento afectado en OutSystems y encuentra la causa concreta;
 - escribe una **guía `.md`** con los pasos exactos para corregirlo a mano en Service Studio;
+- revisa cada solución contra una lista de [buenas prácticas](#buenas-prácticas) y agrega a los pasos lo que esas reglas exigen;
 - genera un **PDF de solución** con las seis secciones que suelen pedir los equipos de calidad, siempre con el mismo diseño;
 - incluye siempre la alternativa de menor cambio, y te avisa cuando la solución cambia el comportamiento de la aplicación (**Requiere decisión funcional**);
 - separa lo que encuentra de otra categoría (seguridad, datos, bugs) como observaciones fuera del alcance, para que lo reportes aparte;
@@ -145,7 +146,8 @@ Los nombres de archivos y carpetas van en inglés; el contenido de los documento
 Además de los pasos manuales, la guía trae:
 
 - **Consultar antes de implementar**, solo cuando hay algo que consultar: un cambio de comportamiento, observaciones fuera del alcance, una alternativa que depende de algo fuera del módulo, o puntos no verificados que no puedes confirmar solo. Va al inicio, justo después del estado sugerido, como una lista corta de preguntas listas para copiar, sin mencionar personas, roles ni equipos. En el chat el hallazgo sale como **Requiere consulta**, con el número de puntos, y `/am:status` lista aparte los hallazgos que lo tienen. No va en el PDF.
-- **Alternativas consideradas**, siempre con la *alternativa mínima*: la opción de menor cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea la recomendada. Si el código hoy no tiene efecto, "retirarlo" aparece entre las alternativas, con lo que habría que confirmar antes. Antes de proponer consumir un REST de otro módulo del mismo ambiente, el plugin considera referenciar una Server Action o Service Action de ese módulo.
+- **Alternativas consideradas**, siempre con la *alternativa mínima*: la opción de menor cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea la recomendada. Si el código hoy no tiene efecto, "retirarlo" aparece entre las alternativas, con lo que habría que confirmar antes.
+- **Buenas prácticas aplicadas**, justo después de las alternativas, cuando la guía propone una solución: una tabla con el código de cada regla que la solución toca, la regla en pocas palabras y cómo la cumple. Si alguna no se pudo cumplir, lo dice y explica por qué. No va en el PDF (ver [Buenas prácticas](#buenas-prácticas)).
 - **Cambio de comportamiento**, solo cuando la solución hace algo más que eliminar el patrón (arregla un bug, activa lógica que hoy no se ejecuta, cambia datos que se escriben o borran, crea integraciones). El hallazgo queda marcado como **Requiere decisión funcional** en el chat y `/am:fix` no lo implementa sin que confirmes que la decisión se tomó.
 - **Hallazgos relacionados**, solo cuando otro hallazgo del progreso toca el mismo elemento, tema o acción compartida. Se identifican por pantalla y patrón (el ID solo se menciona en el chat) y la guía indica si conviene corregirlos juntos para publicar una sola vez.
 - **Observaciones fuera del alcance**, solo cuando el análisis encuentra algo de otra categoría (seguridad, datos, un bug). Se destacan en el chat para que las reportes aparte; el PDF solo dice, en una línea, que se reportan por separado. Al cerrar, `/am:close` te pregunta si ya las reportaste, y solo entonces el PDF final lo dice en pasado.
@@ -223,6 +225,18 @@ El Excel de AI Mentor no trae ID, así que el plugin asigna uno corto por patró
 
 Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que no choque con los existentes y lo registra en la sección `Prefixes` de `_progress.md`. Los ID ya asignados en un `_progress.md` existente no cambian. La sección `Prefixes` guarda además el último consecutivo de cada prefijo (columna `Last`), así que un ID nunca se reutiliza, ni siquiera después de `/am:clean` (con `all`, el `_progress.md` nuevo conserva esa sección).
 
+## Buenas prácticas
+
+Toda solución que propone el plugin cumple las reglas de codificación de OutSystems 11 de `plugins/am/rules/best-practices.md`: documentación, performance, integraciones y seguridad, cada una con un código (`DOC-3`, `PERF-7`, `INT-1`…). El archivo viene con el plugin, es la única fuente de las reglas y no se copia a tu proyecto.
+
+- **Al analizar** (`/am:review`, `/am:redo`), el plugin marca las reglas que la solución toca, la corrige si incumple alguna y agrega a los pasos manuales lo que cada regla exige, dicho de forma explícita: escribir la descripción de una acción y de cada parámetro, crear un Aggregate vacío y agregar solo las entidades necesarias en vez de arrastrarlas desde la pestaña Data, definir Max Records, comentar cada consumo de API, decir qué hace una acción nueva ante un error. "Qué probar después" incluye siempre revisar que el módulo no quedó con warnings nuevos.
+- **Llamadas a otro módulo:** el plugin determina si el módulo es de la misma aplicación o de otra y elige API, Service Action o Server Action según el acoplamiento aceptable (`INT-1`), explicando por qué. Si no puede saber a qué aplicación pertenece, lo deja en "Consultar antes de implementar".
+- **Lo que ya estaba mal** antes del cambio y no es parte del hallazgo no se corrige de paso: va a "Observaciones fuera del alcance". Solo se reporta lo que el plugin vio en los elementos que leyó; no audita el módulo entero.
+- **Reglas "Por confirmar":** tienen una interpretación por defecto. Si esa interpretación cambia la solución, la duda va a "Consultar antes de implementar".
+- **Dónde se citan:** los códigos aparecen solo en el apartado "Buenas prácticas aplicadas" de `solution.md`, en el chat y en el plan de `/am:fix`. Nunca en los pasos, en `implementation.md` ni en el PDF: el PDF ya refleja las reglas porque su solución sale de los pasos.
+- **`/am:fix`** no implementa una guía sin el apartado "Buenas prácticas aplicadas" (por ejemplo, una documentada con una versión anterior) ni una cuyos pasos omitan una acción que una regla exige: en esos casos sugiere `/am:redo`. Su plan de cambio lista esas acciones con el código de su regla.
+- **`/am:close`**, al cerrar como `Fixed`, pregunta si el módulo quedó sin warnings nuevos. Si quedaron, o si no lo sabes, te recuerda la regla y solo cierra si confirmas que quieres cerrar de todos modos; la respuesta queda en `## Cierre` (si no lo sabías, como "warnings: no verificado").
+
 ## Garantías de diseño
 
 - **Solo lectura por defecto.** Seis de los siete comandos nunca publican ni editan en OutSystems.
@@ -235,7 +249,7 @@ Si un patrón no está en la tabla, el plugin genera un prefijo de 3 letras que 
 
 ### Sobre `/am:fix`
 
-Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
+Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la guía tenga el apartado "Buenas prácticas aplicadas", que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
 
 ## Licencias
 

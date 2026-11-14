@@ -153,6 +153,25 @@ rápida") que debe coincidir con ella.
 | URA | Unlimited records in Aggregate |
 | URS | Unlimited records in SQL query |
 
+## Buenas prácticas
+
+Toda solución que propongas cumple las reglas de
+`${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, que viene con el plugin. Es la única
+fuente de las reglas: no lo copies al proyecto, no lo edites y no copies sus reglas a
+otro archivo.
+
+- Si `${CLAUDE_PLUGIN_ROOT}/rules/` no existe (la ruta no apunta a una carpeta real),
+  busca `rules/best-practices.md` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/`. Si tampoco está ahí, detente y pide
+  actualizar el plugin (`/plugin marketplace update nuki23`).
+- Léelo completo en el Paso 1, antes de definir la solución. Cómo se aplica está en
+  el Paso 1.4.
+- Los códigos de las reglas (`DOC-3`, `PERF-7`…) se citan en `solution.md` solo en el
+  apartado "Buenas prácticas aplicadas". También pueden aparecer en el chat y en el
+  plan de `/am:fix`. Nunca van en los pasos manuales, en las alternativas, en
+  `implementation.md` ni en ningún PDF: la solución del PDF ya refleja las reglas
+  porque sale de los pasos.
+
 ## Paso 0 — Preparar
 
 1. Lee el Excel (export "Code Quality Report" de AI Mentor, una hoja). Columnas esperadas:
@@ -218,45 +237,80 @@ rápida") que debe coincidir con ella.
      cambio que elimina el patrón sin alterar el comportamiento actual, aunque no sea
      la recomendada. Si no existe (el patrón no se puede quitar sin cambiar el
      comportamiento), dilo y explica por qué.
-   - **Referencia antes que REST.** Antes de proponer consumir un REST expuesto por
-     otro módulo del mismo ambiente, considera referenciar una Server Action o una
-     Service Action de ese módulo. Propón el REST solo si explicas por qué la
-     referencia no sirve en este caso.
+   - **Integración con otro módulo.** Si la solución llama a algo de otro módulo,
+     aplica la regla `INT-1` de `best-practices.md`: determina si ese módulo es de la
+     misma aplicación o de otra y elige API, Service Action o Server Action según el
+     acoplamiento que la regla acepta para cada caso. Explica la elección en "Cómo se
+     llegó a la solución". Si no puedes saber a qué aplicación pertenece el módulo,
+     va a "Consultar antes de implementar" (paso 9).
    - **Retirar lo que no tiene efecto.** Si el análisis concluye que el código hoy no
      tiene efecto (no se ejecuta, su resultado no se usa, su condición nunca se
      cumple), "Retirarlo" aparece entre las alternativas, con lo que habría que
      confirmar antes de hacerlo (por ejemplo, que nada más lo consume o que no se
      espera reactivarlo).
-4. Evalúa el impacto: qué más consume lo que se va a tocar y qué hay que volver a probar.
-5. **Cambio de comportamiento.** Comprueba si la solución recomendada hace algo más que
+4. **Buenas prácticas.** Con la solución definida y antes de escribir nada, lee
+   `best-practices.md` completo (ver "Buenas prácticas", arriba) y aplica su sección
+   "Cómo se usa" a la solución recomendada:
+   - Marca las reglas que la solución toca: por lo que crea, por lo que modifica o por
+     el mecanismo que elige. Si el patrón del hallazgo está en la tabla "Relación con
+     los patrones de AI Mentor", la regla que le corresponde se marca siempre.
+   - Si la solución incumple una regla, corrígela. Si no hay forma de cumplirla, dilo
+     y justifícalo; no la ignores.
+   - Agrega a los pasos manuales las acciones que cada regla exige, de forma
+     explícita y sin el código de la regla. Por ejemplo: al crear una acción,
+     "escribe su descripción y la de cada parámetro"; al crear un Aggregate, "créalo
+     vacío y agrega solo las entidades necesarias; no las arrastres desde la pestaña
+     Data" y "define Max Records"; al agregar un consumo de API, "escribe en el flujo
+     un comentario con para qué sirve".
+   - **Excepciones.** Toda acción nueva que pueda fallar dice en sus pasos qué hace
+     ante el error, según `SEG-4` y `SEG-5`: los errores esperados de la lógica de
+     negocio, con una User Exception y su mensaje; los demás, con un manejo que
+     registre o informe el error, nunca uno que lo oculte.
+   - **Lo que ya incumplía una regla** antes del cambio y no es parte del hallazgo no
+     se corrige: va a "Observaciones fuera del alcance" (paso 8). Reporta solo lo que
+     viste en los elementos que leíste para el análisis; no audites el módulo entero.
+   - **Reglas "Por confirmar".** Si la interpretación por defecto de una regla
+     marcada "Por confirmar" cambia la solución, la duda va a "Consultar antes de
+     implementar" (paso 9).
+   - Si la guía no va a proponer una solución (estado sugerido `Already fixed` o
+     `False positive`, paso 10), este paso no aplica y el apartado "Buenas prácticas
+     aplicadas" no se escribe.
+5. Evalúa el impacto: qué más consume lo que se va a tocar y qué hay que volver a probar.
+   Entre lo que hay que probar va siempre comprobar que el módulo no quedó con warnings
+   nuevos (`DOC-10`). Los warnings que ya existían y viste al analizar se reportan en
+   "Observaciones fuera del alcance"; no se corrigen.
+6. **Cambio de comportamiento.** Comprueba si la solución recomendada hace algo más que
    eliminar el patrón: arregla un bug, activa lógica que hoy no se ejecuta, cambia
    datos que se escriben o se borran, crea integraciones, o tiene cualquier otro efecto
    que un usuario u otro sistema pueda notar. Si es así, el hallazgo **requiere
    decisión funcional**: lo documentas en el apartado "Cambio de comportamiento"
    (Paso 2) y lo marcas en el reporte (Paso 3). Ante la duda, trátalo como cambio de
    comportamiento.
-6. **Hallazgos relacionados.** Revisa en `_progress.md` si otro hallazgo toca el mismo
+7. **Hallazgos relacionados.** Revisa en `_progress.md` si otro hallazgo toca el mismo
    elemento, el mismo tema o una acción compartida con este (por ejemplo, otro patrón
    sobre la misma pantalla, o la misma Server Action consumida desde otra pantalla). Si
    los hay, van en el apartado "Hallazgos relacionados" (Paso 2), con la indicación de
    si conviene corregirlos juntos para publicar una sola vez, y en el reporte (Paso 3).
    Esto no cambia la regla de un hallazgo a la vez: solo los señalas, no los analizas
    ni los documentas aquí.
-7. **Observaciones fuera del alcance.** Si el análisis encuentra algo de otra categoría
-   (seguridad, datos, un bug) que no es parte de este hallazgo, no lo mezcles con la
-   solución ni lo corrijas de paso: va en el apartado "Observaciones fuera del alcance"
-   (Paso 2) y se destaca en el reporte (Paso 3) para que el usuario lo reporte aparte.
-8. **Consultar antes de implementar.** Reúne lo que el usuario tendría que consultar
+8. **Observaciones fuera del alcance.** Si el análisis encuentra algo de otra categoría
+   (seguridad, datos, un bug), o algo que ya incumplía una buena práctica (paso 4), que
+   no es parte de este hallazgo, no lo mezcles con la solución ni lo corrijas de paso:
+   va en el apartado "Observaciones fuera del alcance" (Paso 2) y se destaca en el
+   reporte (Paso 3) para que el usuario lo reporte aparte.
+9. **Consultar antes de implementar.** Reúne lo que el usuario tendría que consultar
    antes de aplicar la solución. Hay algo que consultar cuando el hallazgo tiene:
-   - "Cambio de comportamiento" (paso 5);
-   - "Observaciones fuera del alcance" (paso 7);
+   - "Cambio de comportamiento" (paso 6);
+   - "Observaciones fuera del alcance" (paso 8);
    - una alternativa que depende de algo que no está en este módulo;
+   - una llamada a otro módulo del que no sabes a qué aplicación pertenece (paso 3);
+   - una regla "Por confirmar" cuya interpretación cambia la solución (paso 4);
    - puntos no verificados que el usuario no puede confirmar solo (los que puede
      comprobar él mismo en Service Studio o en la aplicación no cuentan).
 
    Si hay al menos un punto, el hallazgo **requiere consulta** y se escribe el apartado
    "Consultar antes de implementar" (Paso 2). Si no hay ninguno, el apartado no existe.
-9. Elige el **Estado sugerido en AI Mentor**, con una justificación de una línea:
+10. Elige el **Estado sugerido en AI Mentor**, con una justificación de una línea:
    - `Open`: hay que corregirlo (lo normal; la solución de arriba aplica).
    - `Already fixed`: el problema ya no existe en el código actual.
    - `False positive`: el patrón no aplica a este caso concreto.
@@ -287,7 +341,7 @@ reports/
   regeneran el PDF los toman de aquí).
 - **Estado sugerido en AI Mentor:** el valor y su justificación de una línea.
 - **Consultar antes de implementar** (`## Consultar antes de implementar`; solo si hay
-  algo que consultar, ver Paso 1.8). Va justo aquí, para que sea lo primero que se lea.
+  algo que consultar, ver Paso 1.9). Va justo aquí, para que sea lo primero que se lea.
   Es una lista corta, un punto por cosa a consultar, cada uno redactado como una
   pregunta lista para copiar y enviar: completa por sí sola, con el nombre del elemento
   y el contexto mínimo para entenderla sin leer el resto del documento. No indiques a
@@ -298,24 +352,38 @@ reports/
 - Por qué AI Mentor lo marca en este caso concreto.
 - Cómo se llegó a la solución: qué se revisó, qué se descartó y por qué.
 - **Cambio de comportamiento** (`## Cambio de comportamiento`; solo si aplica, ver
-  Paso 1.5). Empieza con la línea "Requiere decisión funcional". Luego, explícitamente:
+  Paso 1.6). Empieza con la línea "Requiere decisión funcional". Luego, explícitamente:
   qué hace hoy el elemento, qué hará después del cambio, qué datos, usuarios o
   integraciones se ven afectados, y que la alternativa mínima elimina el patrón sin
   este cambio. Si la solución solo elimina el patrón, este apartado no existe.
 - Pasos manuales numerados, uno por acción en Service Studio, con nombres exactos.
+  Incluyen, dichas de forma explícita, las acciones que exigen las buenas prácticas
+  (Paso 1.4): descripciones, cómo crear cada Aggregate, Max Records, qué hace cada
+  acción nueva ante el error. Sin el código de la regla.
 - Alternativas consideradas. Incluye siempre la "Alternativa mínima" (Paso 1.3),
   rotulada así, con su costo y riesgo; si es la recomendada, dilo. Si el código hoy no
-  tiene efecto, incluye también "Retirarlo", con lo que habría que confirmar antes.
-- Impacto y qué probar después (casos funcionales concretos).
+  tiene efecto, incluye también "Retirarlo", con lo que habría que confirmar antes. Si
+  una alternativa incumple una buena práctica, dilo en su riesgo, en palabras y sin el
+  código de la regla (esta tabla va al PDF).
+- **Buenas prácticas aplicadas** (`## Buenas prácticas aplicadas`; solo si la guía
+  propone una solución, ver Paso 1.4; se omite con estado sugerido `Already fixed` o
+  `False positive`). Una tabla de tres columnas: Código, Regla (en pocas palabras) y
+  Cómo la cumple esta solución. Solo las reglas que la solución toca, no la lista
+  completa. Si el patrón del hallazgo está en la tabla "Relación con los patrones de
+  AI Mentor" de `best-practices.md`, su regla va siempre. Si la solución no pudo
+  cumplir alguna, una fila que lo diga y por qué. Es el único apartado de
+  `solution.md` con códigos de reglas. No va en el PDF.
+- Impacto y qué probar después (casos funcionales concretos). Incluye siempre
+  comprobar que el módulo no quedó con warnings nuevos.
 - Cómo verificar en AI Mentor tras republicar y reanalizar.
 - Qué pantallazos tomar para la evidencia (antes / después / AI Mentor).
 - Puntos no verificados, si los hay.
-- **Hallazgos relacionados** (`## Hallazgos relacionados`; solo si hay, ver Paso 1.6).
+- **Hallazgos relacionados** (`## Hallazgos relacionados`; solo si hay, ver Paso 1.7).
   Una entrada por hallazgo, identificado por su pantalla (o elemento) y su patrón,
   nunca por el ID; qué comparte con este (elemento, tema o acción) y si conviene
   corregirlos juntos para publicar una sola vez, con el motivo.
 - **Observaciones fuera del alcance** (`## Observaciones fuera del alcance`; solo si
-  hay, ver Paso 1.7). Es el último apartado del análisis: una entrada por observación
+  hay, ver Paso 1.8). Es el último apartado del análisis: una entrada por observación
   con su categoría (seguridad, datos, bug...), dónde está y por qué importa. Aplica la
   regla 7: nunca el valor de un secreto o dato personal. Las secciones `## Pospuesto` y
   `## Cierre` que escribe `/am:close` van después.
@@ -341,7 +409,8 @@ los títulos que pone el script:
 6. Estado final de la atención
 
 El estado sugerido en AI Mentor es una recomendación interna: no va en el PDF. Tampoco
-van "Consultar antes de implementar" ni "Hallazgos relacionados".
+van "Consultar antes de implementar", "Hallazgos relacionados" ni "Buenas prácticas
+aplicadas", y los códigos de las reglas no van en ninguna sección.
 
 **El PDF nunca afirma algo con más certeza que `solution.md`.** Si allí dice "No
 verificado", "probable", "al parecer" o cualquier otra cautela, el PDF la conserva con
@@ -419,6 +488,7 @@ borra después y no se crea uno por hallazgo.
   | Alternativas consideradas | `h` + `table` (Alternativa, Costo, Riesgo), con la "Alternativa mínima" rotulada así. Solo en `draft`: en ningún cierre |
   | Observaciones fuera del alcance | Una sola `note` al final de `cause`, con la frase fija de `PDF-FORMAT.md`, sin detalle, categoría ni cantidad. En pasado solo si `/am:close` confirmó que ya se reportaron |
   | Fragmentos de código | No van al PDF |
+  | Buenas prácticas aplicadas | No va al PDF, ni ningún código de regla en ningún bloque. La sección 4 ya refleja las reglas porque sale de los pasos |
 
   El diagrama `flow` va solo si el análisis tiene una secuencia clara de 3 a 5 pasos;
   los nodos con el problema llevan `"hit": true`. Si no la tiene, no lo incluyas.
@@ -461,7 +531,8 @@ salida. Lee el PDF y verifica que:
 - tiene las figuras esperadas: en borrador, un marco por cada captura prevista con su
   texto; al cerrar, cada figura muestra su captura;
 - la sección 1 tiene sus cuatro filas y la ficha del encabezado sus cuatro datos;
-- ningún texto lleva el ID ni afirma más que `solution.md`.
+- ningún texto lleva el ID ni un código de regla (`DOC-3`, `PERF-7`…), ni afirma más
+  que `solution.md`.
 
 Si algo falla, corrige `reports/_print.json` y ejecuta de nuevo. Sin esta comprobación
 el PDF no se da por terminado.
@@ -479,6 +550,8 @@ lugar de seis).
    Mentor** con su justificación, carpeta, nombre del PDF y avance (`N de M`). Si el
    PDF quedó pendiente (falta Node, o el script falló), dilo aquí y por qué. Además,
    cuando aplique y de forma destacada:
+   - **Buenas prácticas:** los códigos de las reglas que la solución toca y, si alguna
+     no se pudo cumplir, cuál y por qué.
    - **Requiere consulta:** dilo con esas palabras y con cuántos puntos hay en
      "Consultar antes de implementar" (por ejemplo, "Requiere consulta: 3 puntos").
    - **Requiere decisión funcional:** qué comportamiento cambia, en una o dos líneas, y

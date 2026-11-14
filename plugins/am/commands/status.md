@@ -87,6 +87,14 @@ completa es `/am:review`.
   lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
   recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
   que algo se hizo o se validó sin confirmación del usuario.
+- **Buenas prácticas:** las reglas están en
+  `${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, la única fuente; si esa ruta no
+  existe, se busca `rules/` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/` y, si tampoco está, el comando que las necesita
+  se detiene y pide actualizar el plugin. No se copia al proyecto ni se edita. Sus
+  códigos (`DOC-3`, `PERF-7`…) se citan en `solution.md` solo en el apartado
+  `## Buenas prácticas aplicadas`, y pueden aparecer en el chat y en el plan de
+  `/am:fix`; nunca en los pasos manuales, en `implementation.md` ni en el PDF.
 - **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
   `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
   actualizan y no se borran.

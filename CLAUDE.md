@@ -12,6 +12,7 @@ plugins/am/commands/<nombre>.md     un archivo por comando → /am:<nombre>
 plugins/am/scripts/                 generador fijo de PDF: generate_pdf.cjs (diseño),
                                     pdfkit.bundle.cjs (PDFKit empaquetado, MIT) y
                                     PDF-FORMAT.md (formato de los datos)
+plugins/am/rules/best-practices.md  reglas de buenas prácticas que cumple toda solución
 README.md
 ```
 
@@ -74,6 +75,28 @@ README.md
     bloque "Referencia rápida"; en ningún otro archivo del repo. `/am:clean all` los
     archiva con todo lo demás.
 
+## Buenas prácticas
+
+- `plugins/am/rules/best-practices.md` es la **única fuente** de las reglas (29, con
+  código: `DOC-`, `PERF-`, `INT-`, `SEG-`). Los comandos no copian reglas a su texto:
+  las leen de ese archivo y, como mucho, nombran un código como ejemplo.
+- **Cómo se lee:** `${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, con el mismo plan
+  B que `scripts/`: si la ruta no resuelve, `rules/` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/`; si tampoco está, el comando que lo necesita se
+  detiene y pide actualizar el plugin. No se copia al proyecto y ningún comando lo
+  edita. La referencia es la sección "Buenas prácticas" y el Paso 1.4 de `review.md`.
+- **Quién lo usa:** review y redo aplican "Cómo se usa" al definir la solución
+  (marcar reglas, corregir la solución, agregar a los pasos las acciones que exigen);
+  fix comprueba el apartado y los pasos; close pregunta por warnings nuevos en
+  `Fixed`.
+- **Dónde se citan los códigos:** en `solution.md`, solo en `## Buenas prácticas
+  aplicadas`; también en el chat y en el plan de `/am:fix`. Nunca en los pasos
+  manuales, en las alternativas, en `implementation.md` (es la fuente de la sección 4
+  al cerrar como `Fixed`) ni en ningún PDF. `_print.json` no tiene campos para ellas.
+- Un cambio de reglas se hace solo en ese archivo, en este repo y por decisión del
+  usuario. Sigue la regla de repo genérico: sin nombres de clientes, de aplicaciones
+  reales ni de personas en las reglas ni en sus ejemplos.
+
 ## Formato de `_progress.md`
 
 La definición de referencia está en `commands/review.md`; los demás comandos llevan
@@ -109,8 +132,10 @@ un resumen (bloque "Referencia rápida").
     con una justificación de una línea (review, redo);
   - `## Consultar antes de implementar`, justo después del estado sugerido y solo si
     hay algo que consultar (cambio de comportamiento, observaciones fuera del alcance,
-    una alternativa que depende de algo fuera del módulo, o puntos no verificados que
-    el usuario no puede confirmar solo): lista corta de preguntas listas para copiar,
+    una alternativa que depende de algo fuera del módulo, una llamada a un módulo del
+    que no se sabe a qué aplicación pertenece, una regla "Por confirmar" cuya
+    interpretación cambia la solución, o puntos no verificados que el usuario no puede
+    confirmar solo): lista corta de preguntas listas para copiar,
     sin indicar a quién van ni mencionar personas, roles ni equipos. No va en el PDF.
     En el chat, "Requiere consulta" y cuántos puntos (escriben review y redo; lo leen
     status, que lista aparte los `draft` e `implemented` que lo tienen, y fix, que
@@ -119,6 +144,16 @@ un resumen (bloque "Referencia rápida").
     cambio que elimina el patrón sin alterar el comportamiento, y con "Retirarlo" si
     el código hoy no tiene efecto, junto a lo que habría que confirmar antes (review,
     redo);
+  - `## Buenas prácticas aplicadas`, justo después de "Alternativas consideradas" y
+    solo si la guía propone una solución (no con estado sugerido `Already fixed` ni
+    `False positive`; redo no lo agrega en un `closed` de solo redacción): tabla de
+    tres columnas (código, regla en pocas palabras, cómo la cumple esta solución),
+    solo con las reglas que la solución toca, siempre la del patrón si está en la
+    tabla "Relación con los patrones de AI Mentor", y una fila por regla que no se
+    pudo cumplir, con el porqué. No va en el PDF (escriben review y redo; lo exige
+    fix);
+  - pasos manuales con las acciones que exigen las reglas, explícitas y sin código, y
+    "Impacto y qué probar después" siempre con la revisión de warnings nuevos;
   - `## Cambio de comportamiento`, solo si la solución hace algo más que eliminar el
     patrón; empieza con "Requiere decisión funcional" (escriben review y redo; lo leen
     fix y close);
@@ -133,8 +168,11 @@ un resumen (bloque "Referencia rápida").
   - `## Cierre` (estado final, fecha y, según el caso, lo verificado o la justificación
     y quién aprobó; el ambiente, la versión publicada y la fecha de validación, si se
     dieron; quién tomó la decisión funcional, si el cambio aplicado conserva un
-    cambio de comportamiento; si un `implemented` se cierra sin `Fixed`, también si
-    el cambio de `/am:fix` se revierte) que escribe close y leen summary y redo;
+    cambio de comportamiento; en `Fixed`, si el módulo quedó sin warnings nuevos, con
+    warnings nuevos y cierre confirmado, o "warnings: no verificado" con cierre
+    confirmado; si un `implemented` se
+    cierra sin `Fixed`, también si el cambio de `/am:fix` se revierte) que escribe
+    close y leen summary y redo;
   - `## Pospuesto` (fecha y motivo de un Remind me later) que escribe close.
 
 ## Estados de AI Mentor
@@ -160,12 +198,19 @@ un resumen (bloque "Referencia rápida").
   sin que el usuario confirme, en esa invocación, que la decisión funcional se tomó.
   Si tiene `## Consultar antes de implementar`, muestra las preguntas y se detiene sin
   un sí, dado en esa invocación, a que ya se resolvieron. Son dos comprobaciones
-  separadas: el sí de una no vale para la otra.
+  separadas: el sí de una no vale para la otra. Antes de ambas, si `solution.md` no
+  tiene `## Buenas prácticas aplicadas`, o a sus pasos les falta una acción que una
+  regla exige, `/am:fix` no implementa nada y sugiere `/am:redo`; no agrega acciones
+  por su cuenta. Su plan de cambio lista esas acciones con el código de su regla.
 - **Solución sin sorpresas:** review y redo incluyen siempre la alternativa mínima,
-  consideran referenciar una Server Action o Service Action antes de proponer un REST
-  de otro módulo del mismo ambiente, declaran todo cambio de comportamiento
-  ("Requiere decisión funcional" en el chat) y dejan lo de otra categoría (seguridad,
-  datos, bug) en "Observaciones fuera del alcance", destacado en el chat.
+  aplican las buenas prácticas de `rules/best-practices.md` (para una llamada a otro
+  módulo, `INT-1`: API, Service Action o Server Action según si el módulo es de la
+  misma aplicación o de otra, explicando la elección; si no se sabe, va a
+  "Consultar antes de implementar"), dicen qué hace ante el error toda acción nueva
+  que pueda fallar, declaran todo cambio de comportamiento ("Requiere decisión
+  funcional" en el chat) y dejan lo de otra categoría (seguridad, datos, bug) y lo
+  que ya incumplía una regla antes del cambio en "Observaciones fuera del alcance",
+  destacado en el chat, sin auditar el módulo entero.
   Ningún comando cambia el estado del hallazgo en AI Mentor.
 - **Un hallazgo a la vez:** `/am:review` se detiene tras cada hallazgo y pregunta antes de
   seguir; `/am:fix` atiende un solo ID por invocación.
@@ -183,7 +228,7 @@ un resumen (bloque "Referencia rápida").
 - **Bloque "Referencia rápida" sincronizado:** close, redo, fix, clean, status y
   summary llevan un bloque idéntico (columnas de `_progress.md`, valores de
   `Doc status` y `Final status`, nombres de carpeta y PDF, script y generación del
-  PDF) para no
+  PDF, ruta de las buenas prácticas y dónde se citan) para no
   depender de leer `review.md`, que sigue siendo la referencia completa. Si cambia algo
   de eso, se actualiza `review.md` y el bloque en los seis, y se comprueba que sigue
   idéntico.
@@ -191,7 +236,11 @@ un resumen (bloque "Referencia rápida").
   de escribir `## Cierre` y de marcar `closed`. Si el PDF no sale, el hallazgo sigue
   como estaba. Al cerrar, pregunta en una sola pregunta el ambiente, la versión
   publicada y la fecha de validación (opcionales; lo que falte sale como "—") y los
-  anota en `## Cierre`, para que redo pueda regenerar el mismo PDF.
+  anota en `## Cierre`, para que redo pueda regenerar el mismo PDF. En `Fixed`
+  pregunta si el módulo quedó sin warnings nuevos; si quedaron o el usuario no lo
+  sabe, recuerda la regla y solo cierra con un sí explícito a cerrar de todos modos
+  (si no lo sabía, se anota "warnings: no verificado"). La respuesta va en
+  `## Cierre`, no en el PDF.
 - **PDF de solución, siempre seis secciones**, con el orden y los títulos que pone
   `scripts/generate_pdf.cjs`:
   1. Identificación del hallazgo: cuatro filas fijas, en este orden (App, Módulo,
@@ -244,7 +293,8 @@ un resumen (bloque "Referencia rápida").
   solo en el código de salida. Sin esa comprobación el PDF no se da por terminado.
 - **El PDF nunca afirma más que `solution.md`:** si la guía dice "No verificado" o
   "probable", el PDF usa la misma cautela (review, redo, close). "Consultar antes de
-  implementar" y "Hallazgos relacionados" no van en el PDF.
+  implementar", "Hallazgos relacionados" y "Buenas prácticas aplicadas" no van en el
+  PDF, ni ningún código de regla en ninguna sección.
 - **Sin secretos ni datos personales en la salida:** ningún comando copia a `.md`, PDF ni
   al chat el valor de un secreto, credencial, token o dato personal; solo el nombre y la
   ruta del elemento. Todo comando nuevo debe incluir esta regla.

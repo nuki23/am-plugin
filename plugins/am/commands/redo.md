@@ -70,6 +70,14 @@ completa es `/am:review`.
   lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
   recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
   que algo se hizo o se validó sin confirmación del usuario.
+- **Buenas prácticas:** las reglas están en
+  `${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, la única fuente; si esa ruta no
+  existe, se busca `rules/` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/` y, si tampoco está, el comando que las necesita
+  se detiene y pide actualizar el plugin. No se copia al proyecto ni se edita. Sus
+  códigos (`DOC-3`, `PERF-7`…) se citan en `solution.md` solo en el apartado
+  `## Buenas prácticas aplicadas`, y pueden aparecer en el chat y en el plan de
+  `/am:fix`; nunca en los pasos manuales, en `implementation.md` ni en el PDF.
 - **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
   `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
   actualizan y no se borran.
@@ -97,9 +105,14 @@ completa es `/am:review`.
    - Por qué AI Mentor lo marca
    - Cómo se llegó a la solución
    - Cambio de comportamiento (`## Cambio de comportamiento`), solo si aplica
-   - Pasos manuales
+   - Pasos manuales, con las acciones que exigen las buenas prácticas dichas de forma
+     explícita y sin el código de la regla
    - Alternativas consideradas, siempre con la "Alternativa mínima"
-   - Impacto y qué probar después
+   - Buenas prácticas aplicadas (`## Buenas prácticas aplicadas`), solo si la guía
+     propone una solución; se omite con estado sugerido `Already fixed` o
+     `False positive`. En un `closed` de solo redacción no se agrega si no existía
+   - Impacto y qué probar después, siempre con la comprobación de que el módulo no
+     quedó con warnings nuevos
    - Cómo verificar en AI Mentor
    - Qué pantallazos tomar para la evidencia
    - Puntos no verificados, si los hay
@@ -117,9 +130,32 @@ completa es `/am:review`.
    - **Retirar lo que no tiene efecto:** si el análisis concluye que el código hoy no
      tiene efecto, "Retirarlo" aparece entre las alternativas, con lo que habría que
      confirmar antes.
-   - **Referencia antes que REST:** antes de proponer consumir un REST de otro módulo
-     del mismo ambiente, considera referenciar una Server Action o una Service Action
-     de ese módulo.
+   - **Integración con otro módulo:** si la solución llama a algo de otro módulo,
+     aplica `INT-1` de `best-practices.md`: determina si ese módulo es de la misma
+     aplicación o de otra y elige API, Service Action o Server Action según el
+     acoplamiento que la regla acepta. Explica la elección en "Cómo se llegó a la
+     solución". Si no puedes saber a qué aplicación pertenece, va a "Consultar antes
+     de implementar".
+   - **Buenas prácticas:** con la solución definida y antes de escribir nada, lee
+     `best-practices.md` completo (ubicación en "Referencia rápida") y aplica su
+     sección "Cómo se usa", igual que el Paso 1.4 de `/am:review`: marca las reglas
+     que la solución toca (siempre la que corresponde al patrón, si está en la tabla
+     "Relación con los patrones de AI Mentor"), corrige la solución si incumple
+     alguna (si no hay forma de cumplirla, dilo y justifícalo) y agrega a los pasos
+     manuales, de forma explícita y sin el código, las acciones que cada regla exige
+     (por ejemplo, "escribe su descripción y la de cada parámetro"; "créalo vacío y
+     agrega solo las entidades necesarias; no las arrastres desde la pestaña Data";
+     "define Max Records"). Toda acción nueva que pueda fallar dice qué hace ante el
+     error, según `SEG-4` y `SEG-5`. Lo que ya incumplía una regla antes del cambio y
+     no es parte del hallazgo no se corrige: va a "Observaciones fuera del alcance",
+     solo con lo que viste en los elementos que leíste; no audites el módulo entero.
+     En `draft` e `implemented` las reglas se aplican siempre, aunque la nota del
+     usuario no las mencione: si eso agrega o cambia pasos, cuenta como cambio de
+     solución (paso 6). En un `closed` de solo redacción no se aplican ni se agrega
+     el apartado.
+   - **Warnings:** "Impacto y qué probar después" incluye siempre comprobar que el
+     módulo no quedó con warnings nuevos (`DOC-10`). Los que ya existían y viste al
+     analizar van a "Observaciones fuera del alcance"; no se corrigen.
    - **Cambio de comportamiento:** si la solución hace algo más que eliminar el patrón
      (arregla un bug, activa lógica que hoy no se ejecuta, cambia datos que se escriben
      o se borran, crea integraciones), escribe el apartado: primera línea "Requiere
@@ -132,12 +168,15 @@ completa es `/am:review`.
      conviene corregirlos juntos para publicar una sola vez. Si ya no hay ninguno,
      quita el apartado.
    - **Observaciones fuera del alcance:** lo que encuentres de otra categoría
-     (seguridad, datos, bug) va en ese apartado, no en la solución; conserva las
-     observaciones anteriores que sigan vigentes.
+     (seguridad, datos, bug), o lo que ya incumplía una buena práctica, va en ese
+     apartado, no en la solución; conserva las observaciones anteriores que sigan
+     vigentes.
    - **Consultar antes de implementar:** vuelve a evaluar si hay algo que consultar:
      "Cambio de comportamiento", "Observaciones fuera del alcance", una alternativa que
-     depende de algo que no está en este módulo, o puntos no verificados que el usuario
-     no puede confirmar solo. Si lo hay, escribe el apartado justo después de "Estado
+     depende de algo que no está en este módulo, una llamada a otro módulo del que no
+     sabes a qué aplicación pertenece, una regla "Por confirmar" cuya interpretación
+     cambia la solución, o puntos no verificados que el usuario no puede confirmar
+     solo. Si lo hay, escribe el apartado justo después de "Estado
      sugerido en AI Mentor": una lista corta, cada punto redactado como pregunta lista
      para copiar, sin indicar a quién va ni mencionar personas, roles ni equipos, y sin
      secretos ni datos personales. Si ya no hay nada que consultar (por ejemplo, la
@@ -200,9 +239,13 @@ completa es `/am:review`.
    - El PDF nunca afirma algo con más certeza que `solution.md`: si allí dice "No
      verificado" o "probable", el PDF usa la misma cautela. Sin el ID y sin valores de
      secretos ni datos personales.
+   - "Buenas prácticas aplicadas" no va en el PDF, y ningún código de regla va en
+     ninguna sección. `_print.json` no lleva campos nuevos: la solución del PDF ya
+     refleja las reglas porque sale de los pasos.
 
    Según lo que cambió:
-   - **Si la solución cambió, queda `draft`**: PDF en modo borrador, vacía
+   - **Si la solución cambió, queda `draft`** (también cuando el cambio es que aplicar
+     las buenas prácticas agregó o cambió pasos): PDF en modo borrador, vacía
      `Final status` y quita la sección `## Cierre` de `solution.md` si existía. Si
      estaba `implemented`, además avisa claramente que lo implementado en OutSystems ya
      no coincide con el documento; conserva `implementation.md` y agrega al inicio una
@@ -214,7 +257,9 @@ completa es `/am:review`.
 7. Si el estado cambió, actualiza la fila en `_progress.md`: `Doc status`,
    `Final status` si corresponde, y `Updated` = hoy.
 8. Resume qué cambió respecto a la versión anterior, el estado sugerido en AI Mentor y
-   en qué estado quedó el hallazgo. Si el PDF quedó pendiente, dilo. Destaca, cuando aplique, **Requiere consulta**
+   en qué estado quedó el hallazgo. Si el PDF quedó pendiente, dilo. Indica los
+   códigos de las reglas que la solución toca y si aplicarlas agregó o cambió pasos.
+   Destaca, cuando aplique, **Requiere consulta**
    (con esas palabras y cuántos puntos), **Requiere decisión
    funcional** (qué comportamiento cambia y cuál es la alternativa mínima), los
    **Hallazgos relacionados** (en el chat sí con su ID, y si conviene corregirlos

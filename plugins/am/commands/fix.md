@@ -72,6 +72,14 @@ completa es `/am:review`.
   lo que indica `PDF-FORMAT.md`. En ningún cierre va la tabla de alternativas, y el
   recuadro de un cierre se titula solo "Cambio de comportamiento". Nunca se afirma
   que algo se hizo o se validó sin confirmación del usuario.
+- **Buenas prácticas:** las reglas están en
+  `${CLAUDE_PLUGIN_ROOT}/rules/best-practices.md`, la única fuente; si esa ruta no
+  existe, se busca `rules/` en la versión más alta de
+  `~/.claude/plugins/cache/nuki23/am/` y, si tampoco está, el comando que las necesita
+  se detiene y pide actualizar el plugin. No se copia al proyecto ni se edita. Sus
+  códigos (`DOC-3`, `PERF-7`…) se citan en `solution.md` solo en el apartado
+  `## Buenas prácticas aplicadas`, y pueden aparecer en el chat y en el plan de
+  `/am:fix`; nunca en los pasos manuales, en `implementation.md` ni en el PDF.
 - **Versiones anteriores:** si el proyecto tiene `reports/_template/`, algún
   `solution.html` o un script propio en `scripts/`, se ignoran: no se usan, no se
   actualizan y no se borran.
@@ -83,7 +91,18 @@ completa es `/am:review`.
    `draft` y tiene `solution.md`. Si no, indica que primero va `/am:review`.
 2. **Estado sugerido.** Si el "Estado sugerido en AI Mentor" de `solution.md` no es
    `Open`, no hay corrección que implementar: dilo y sugiere `/am:close` o `/am:redo`.
-3. **Decisión funcional.** Si `solution.md` tiene el apartado
+3. **Buenas prácticas.** Si `solution.md` no tiene el apartado
+   `## Buenas prácticas aplicadas`, la solución no pasó por las reglas (por ejemplo,
+   se documentó con una versión anterior del plugin): no implementes nada, dilo y
+   sugiere `/am:redo <ID>`. Si lo tiene, lee `best-practices.md` completo (ubicación
+   en "Referencia rápida"; si no está, detente y pide actualizar el plugin) y
+   comprueba que los pasos de `solution.md` incluyen las acciones que exigen las
+   reglas, tanto las marcadas en el apartado como las que tocan los elementos que los
+   pasos crean o modifican: descripciones de acciones y parámetros, cada Aggregate
+   creado vacío con solo las entidades necesarias, Max Records, comentario en cada
+   consumo de API, qué hace cada acción nueva ante el error. Si falta alguna, detente
+   y sugiere `/am:redo`; no la agregues por tu cuenta.
+4. **Decisión funcional.** Si `solution.md` tiene el apartado
    `## Cambio de comportamiento` ("Requiere decisión funcional"), la solución hace algo
    más que eliminar el patrón. Muestra lo que dice el apartado y pregunta si la
    decisión funcional ya se tomó y quién la tomó. Sin un sí explícito dentro de esta
@@ -91,29 +110,29 @@ completa es `/am:review`.
    cuenta, y la aprobación del plan (Paso 2) no lo reemplaza. Si la decisión fue ir por
    la alternativa mínima u otra distinta de la documentada, no la implementes desde
    aquí: sugiere `/am:redo` para que `solution.md` refleje lo decidido.
-4. **Consultas pendientes.** Si `solution.md` tiene el apartado
+5. **Consultas pendientes.** Si `solution.md` tiene el apartado
    `## Consultar antes de implementar`, muestra sus preguntas tal como están y pregunta
    si ya se resolvieron todas. Sin un sí explícito dentro de esta invocación, detente y
    termina; un sí anterior en la conversación no cuenta. Es una comprobación aparte de
    la de decisión funcional: el sí de una no vale para la otra, y la aprobación del
    plan (Paso 2) no reemplaza a ninguna. Si alguna respuesta cambia la solución
    documentada, no la adaptes desde aquí: sugiere `/am:redo`.
-5. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
+6. **Capacidad de escritura.** Revisa qué herramientas de OutSystems tienes disponibles
    en esta sesión. Si ninguna permite editar y publicar, dilo así: "Esta conexión a
    OutSystems es solo lectura; aplica `solution.md` a mano y luego usa `/am:close`", y
    termina. No busques rutas alternas (automatizar la interfaz, APIs no documentadas,
    scripts propios).
-6. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
+7. **Ambiente.** Confirma que la conexión apunta a Desarrollo. Si no puedes
    determinarlo, pregunta. Nunca modifiques QA, Preproducción ni Producción, y nunca
    despliegues entre ambientes.
-7. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
+8. **Vigencia del análisis.** Vuelve a leer en OutSystems los elementos que nombra
    `solution.md`. Si ya no coinciden con lo documentado (alguien cambió la pantalla, la
    acción ya no existe, el hallazgo ya fue corregido), detente y sugiere `/am:redo`.
    Lo mismo si al releer ves que los pasos cambian el comportamiento (arreglan un bug,
    activan lógica que hoy no se ejecuta, cambian datos que se escriben o se borran,
    crean integraciones) y `solution.md` no tiene el apartado
    `## Cambio de comportamiento`.
-8. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
+9. **Revisión humana.** Pregunta si el usuario ya leyó y aprueba la solución de
    `solution.md`. Sin un sí, no sigas.
 
 ## Paso 2 — Plan de cambio
@@ -121,6 +140,12 @@ completa es `/am:review`.
 Muestra, antes de tocar nada:
 
 - Elementos que vas a crear, modificar o eliminar, con nombre y ruta exactos.
+- Las acciones que exigen las buenas prácticas, cada una con el código de su regla:
+  por ejemplo, la descripción de cada acción y parámetro nuevo (`DOC-3`), cada
+  Aggregate creado vacío con solo las entidades necesarias (`PERF-0`) y con Max
+  Records (`PERF-7`), el comentario en cada consumo de API (`DOC-11`) y qué hace cada
+  acción nueva ante el error (`SEG-4`, `SEG-5`). Salen de los pasos de `solution.md`;
+  no agregues ninguna que no esté ahí.
 - Si el hallazgo requiere decisión funcional: el cambio de comportamiento que se va a
   introducir y la decisión confirmada en el Paso 1.
 - Qué otros elementos consumen lo que se modifica (impacto).
@@ -137,8 +162,8 @@ anterior en la conversación no cuenta.
    mismo elemento: anótalos y repórtalos al final.
 2. Si un paso no se puede aplicar como está escrito, detente y pregunta; no improvises
    una solución distinta.
-3. Si la publicación devuelve errores, o advertencias nuevas que antes no estaban,
-   detente, muestra el mensaje completo y propón revertir. No intentes arreglarlo con
+3. Si la publicación devuelve errores, o advertencias nuevas que antes no estaban
+   (la regla `DOC-10` pide que el cambio no deje warnings nuevos), detente, muestra el mensaje completo y propón revertir. No intentes arreglarlo con
    más cambios sin confirmación.
 
 ## Paso 4 — Verificar y registrar
@@ -146,7 +171,10 @@ anterior en la conversación no cuenta.
 1. Vuelve a leer los elementos modificados y confirma que quedaron como dice el plan.
 2. Escribe `implementation.md` en la carpeta del hallazgo: fecha, ambiente, lista de
    cambios realmente aplicados (elemento por elemento), versión publicada si aplica,
-   desviaciones respecto a `solution.md`, y otros hallazgos observados sin tocar. Si
+   desviaciones respecto a `solution.md`, y otros hallazgos observados sin tocar. Sin
+   códigos de reglas: `implementation.md` es la fuente de la sección 4 del PDF al
+   cerrar como `Fixed`, así que las acciones que exigían las reglas se describen en
+   palabras, como cualquier otro cambio. Si
    el hallazgo requería decisión funcional, anota que el usuario confirmó que se tomó,
    quién la tomó (el nombre o rol que dio; nunca un correo) y la fecha. Si tenía
    "Consultar antes de implementar", anota que el usuario confirmó que las consultas
