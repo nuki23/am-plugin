@@ -149,28 +149,52 @@ Muestra, antes de tocar nada:
 - Si el hallazgo requiere decisión funcional: el cambio de comportamiento que se va a
   introducir y la decisión confirmada en el Paso 1.
 - Qué otros elementos consumen lo que se modifica (impacto).
-- Si vas a publicar el módulo al terminar, o si dejas el cambio sin publicar.
+- Que el cambio se aplica **sin publicar**: al terminar, revisas el cambio y decides
+  si se publica (Paso 4).
 - Cómo se revierte (versión del módulo a la que habría que volver).
 
 Pide confirmación explícita. "Sí" a este plan es la única autorización válida; un sí
-anterior en la conversación no cuenta.
+anterior en la conversación no cuenta. Este sí autoriza a aplicar el cambio, no a
+publicarlo.
 
-## Paso 3 — Implementar
+## Paso 3 — Implementar (sin publicar)
 
-1. Aplica solo los pasos de `solution.md` aprobados en el plan. Nada de refactors
+1. Antes de tocar nada, lee los mensajes de validación del módulo (errores y
+   warnings) para tener la línea base. Si no puedes leerlos, dilo: la comparación del
+   punto 4 queda a cargo del usuario en su revisión.
+2. Aplica solo los pasos de `solution.md` aprobados en el plan. Nada de refactors
    adicionales, renombrados ni "mejoras de paso", aunque veas otros hallazgos en el
-   mismo elemento: anótalos y repórtalos al final.
-2. Si un paso no se puede aplicar como está escrito, detente y pregunta; no improvises
+   mismo elemento: anótalos y repórtalos al final. **No publiques el módulo.**
+3. Si un paso no se puede aplicar como está escrito, detente y pregunta; no improvises
    una solución distinta.
-3. Si la publicación devuelve errores, o advertencias nuevas que antes no estaban
-   (la regla `DOC-10` pide que el cambio no deje warnings nuevos), detente, muestra el mensaje completo y propón revertir. No intentes arreglarlo con
-   más cambios sin confirmación.
+4. Vuelve a leer los mensajes de validación y compáralos con la línea base. Si hay
+   errores, o warnings nuevos que antes no estaban (la regla `DOC-10` pide que el
+   cambio no deje warnings nuevos), detente, muestra el mensaje completo y propón
+   revertir. No intentes arreglarlo con más cambios sin confirmación.
+5. Vuelve a leer los elementos modificados y confirma que quedaron como dice el plan.
 
-## Paso 4 — Verificar y registrar
+## Paso 4 — Revisión y publicación
 
-1. Vuelve a leer los elementos modificados y confirma que quedaron como dice el plan.
-2. Escribe `implementation.md` en la carpeta del hallazgo: fecha, ambiente, lista de
-   cambios realmente aplicados (elemento por elemento), versión publicada si aplica,
+1. Muestra un resumen de lo que quedó aplicado, elemento por elemento con su ruta,
+   las desviaciones respecto a `solution.md` si las hubo, y el resultado de la
+   comparación de mensajes de validación. Pide al usuario que revise el cambio en
+   Service Studio.
+2. Pregunta: "¿Deseas publicar el módulo ahora?". Es una autorización aparte: el sí
+   al plan (Paso 2) no la reemplaza, y un sí anterior en la conversación no cuenta.
+   - **Con un sí explícito**, publica solo este módulo, en Desarrollo. Si la
+     publicación devuelve errores o warnings nuevos, detente, muestra el mensaje
+     completo y propón revertir; no intentes arreglarlo con más cambios sin
+     confirmación.
+   - **Sin un sí explícito** (dice que no, que lo publica él, o no responde), no
+     publiques. El cambio queda aplicado en Desarrollo sin publicar; recuérdale que
+     debe publicarlo él antes de probar.
+3. Nunca despliegues a otro ambiente, publiques ni no.
+
+## Paso 5 — Registrar
+
+1. Escribe `implementation.md` en la carpeta del hallazgo: fecha, ambiente, lista de
+   cambios realmente aplicados (elemento por elemento), si se publicó con `/am:fix`
+   (con la versión publicada) o quedó sin publicar para que el usuario lo publique,
    desviaciones respecto a `solution.md`, y otros hallazgos observados sin tocar. Sin
    códigos de reglas: `implementation.md` es la fuente de la sección 4 del PDF al
    cerrar como `Fixed`, así que las acciones que exigían las reglas se describen en
@@ -181,9 +205,10 @@ anterior en la conversación no cuenta.
    estaban resueltas y la fecha, sin copiar las respuestas. Si
    `implementation.md` ya existe (por una solución anterior rehecha con `/am:redo`), no
    lo borres: agrega la nueva implementación como sección fechada al final.
-3. Actualiza la fila en `_progress.md`: `Doc status` = `implemented`, `Updated` = hoy.
-   No lo marques `closed` ni llenes `Final status`.
-4. Recuerda al usuario lo que sigue siendo suyo: probar los casos funcionales de
+2. Actualiza la fila en `_progress.md`: `Doc status` = `implemented`, `Updated` = hoy,
+   se haya publicado o no. No lo marques `closed` ni llenes `Final status`.
+3. Recuerda al usuario lo que sigue siendo suyo: publicar, si no lo hizo
+   `/am:fix`; probar los casos funcionales de
    `solution.md`, verificar en AI Mentor tras el reanálisis, guardar los pantallazos en
    `evidence/` y correr `/am:close <ID>`.
 

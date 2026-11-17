@@ -194,6 +194,11 @@ un resumen (bloque "Referencia rápida").
 - **OutSystems es solo lectura** en todos los comandos, excepto `/am:fix`, que exige:
   conexión con escritura, ambiente de Desarrollo y confirmación explícita del plan de
   cambio dentro de esa misma invocación. `/am:fix` mantiene `disable-model-invocation: true`.
+  `/am:fix` aplica el cambio **sin publicar**: compara los mensajes de validación
+  antes y después, muestra lo aplicado para que el usuario lo revise y al final
+  pregunta si desea publicar. Solo publica (ese módulo, en Desarrollo) con un sí
+  explícito a esa pregunta, dado en esa invocación; el sí al plan no la reemplaza.
+  Sin ese sí, el cambio queda sin publicar y `implementation.md` lo dice.
   Si `solution.md` tiene `## Cambio de comportamiento`, `/am:fix` se niega a implementar
   sin que el usuario confirme, en esa invocación, que la decisión funcional se tomó.
   Si tiene `## Consultar antes de implementar`, muestra las preguntas y se detiene sin

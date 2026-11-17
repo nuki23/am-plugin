@@ -6,7 +6,7 @@
 
 Un PDF formal y una guía paso a paso por cada hallazgo, sin que la IA toque tu aplicación.
 
-![versión](https://img.shields.io/badge/versión-0.6.0-2563eb)
+![versión](https://img.shields.io/badge/versión-0.7.0-2563eb)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-d97757)
 ![OutSystems](https://img.shields.io/badge/OutSystems-AI_Mentor-cc0000)
 ![modo](https://img.shields.io/badge/por_defecto-solo_lectura-16a34a)
@@ -249,7 +249,7 @@ Toda solución que propone el plugin cumple las reglas de codificación de OutSy
 
 ### Sobre `/am:fix`
 
-Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la guía tenga el apartado "Buenas prácticas aplicadas", que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Con una conexión de solo lectura, simplemente te avisa y termina.
+Es el único comando que modifica OutSystems, y solo lo ejecutas tú. Antes de tocar nada comprueba que la guía tenga el apartado "Buenas prácticas aplicadas", que la conexión permita escritura, que el ambiente sea Desarrollo y que el análisis siga vigente. Si el hallazgo está marcado como **Requiere decisión funcional**, se niega a implementarlo hasta que confirmes, en esa misma invocación, que la decisión se tomó. Por separado, si la guía tiene "Consultar antes de implementar", te muestra las preguntas y se detiene hasta que confirmes que ya se resolvieron. Luego te muestra el plan de cambio y espera tu confirmación. Aplica el cambio **sin publicar**, comprueba que no deje errores ni warnings nuevos, te muestra lo que quedó para que lo revises en Service Studio y te pregunta si deseas publicar: solo publica (en Desarrollo, ese módulo) si respondes que sí; si no, el cambio queda sin publicar y lo publicas tú. Con una conexión de solo lectura, simplemente te avisa y termina.
 
 ## Licencias
 
